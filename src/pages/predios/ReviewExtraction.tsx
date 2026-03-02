@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabasePredios as supabase } from '@/integrations/supabase/predios';
 import { useExtractedBuildings, Extraction } from '@/hooks/predios/useExtractions';
 import { PermissionGate } from '@/components/predios/PermissionGate';
 import { PERMISSIONS } from '@/lib/predios/auth-types';

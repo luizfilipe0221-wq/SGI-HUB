@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabasePredios as supabase } from '@/integrations/supabase/predios';
 import { useAuth } from '@/hooks/predios/useAuth';
 import { useAuditLog } from '@/hooks/predios/useAuditLog';
 

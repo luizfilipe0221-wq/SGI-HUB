@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabasePredios as supabase } from '@/integrations/supabase/predios';
 import { PermissionGate } from '@/components/predios/PermissionGate';
 import { PERMISSIONS, AuditLog } from '@/lib/predios/auth-types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

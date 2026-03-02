@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabasePredios as supabase } from '@/integrations/supabase/predios';
 import { TerritoryWithStats, Building } from '@/lib/predios/types';
 import { calculateBuildingStatus, ApartmentStats, sortBuildingsByPriority } from '@/lib/predios/building-utils';
 import { useAuth } from './useAuth';
