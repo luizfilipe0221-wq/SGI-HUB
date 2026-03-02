@@ -7,6 +7,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import OperatorView from "./pages/OperatorView";
 import NotFound from "./pages/NotFound";
+import { PrediosSection } from "./components/predios/PrediosSection";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
           <Route path="/" element={<Navigate to="/admin/login" replace />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/predios/*" element={<PrediosSection />} />
           <Route path="/lista/:token" element={<OperatorView />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

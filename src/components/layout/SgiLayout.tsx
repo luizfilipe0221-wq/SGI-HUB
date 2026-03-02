@@ -1,3 +1,4 @@
+import React from "react";
 import { Building2, Phone } from "lucide-react";
 
 interface SgiLayoutProps {
@@ -32,8 +33,8 @@ export function SgiLayout({ activeModule, onChangeModule, children }: SgiLayoutP
                         id="tab-lista-telefonica"
                         onClick={() => onChangeModule("lista-telefonica")}
                         className={`flex items-center gap-2 px-5 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 ${activeModule === "lista-telefonica"
-                                ? "bg-white text-foreground shadow-sm"
-                                : "text-muted-foreground hover:text-foreground"
+                            ? "bg-white text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
                             }`}
                     >
                         <Phone className="h-4 w-4" />
@@ -43,8 +44,8 @@ export function SgiLayout({ activeModule, onChangeModule, children }: SgiLayoutP
                         id="tab-gestao-predios"
                         onClick={() => onChangeModule("gestao-predios")}
                         className={`flex items-center gap-2 px-5 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 ${activeModule === "gestao-predios"
-                                ? "bg-white text-foreground shadow-sm"
-                                : "text-muted-foreground hover:text-foreground"
+                            ? "bg-white text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
                             }`}
                     >
                         <Building2 className="h-4 w-4" />

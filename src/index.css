@@ -150,3 +150,46 @@
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+/* ── Gestão de Prédios module CSS ── */
+:root {
+  --sidebar-background: 222 47% 11%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-primary: 217 91% 60%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 222 47% 15%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 222 47% 18%;
+  --sidebar-ring: 217 91% 60%;
+  --success: 142 71% 45%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 100%;
+  --expired: 0 84% 60%;
+  --expired-foreground: 0 0% 100%;
+}
+
+@layer utilities {
+  .sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors;
+  }
+  .sidebar-item-active {
+    @apply bg-sidebar-accent text-sidebar-foreground font-medium;
+  }
+  .status-expired {
+    @apply bg-destructive/10 text-destructive border-destructive/20;
+  }
+  .status-warning {
+    @apply bg-yellow-500/10 text-yellow-600 border-yellow-500/20;
+  }
+  .status-success {
+    @apply bg-green-500/10 text-green-700 border-green-500/20;
+  }
+  .status-completed {
+    @apply bg-primary/10 text-primary border-primary/20;
+  }
+  .status-not-started {
+    @apply bg-muted text-muted-foreground border-border;
+  }
+}
+

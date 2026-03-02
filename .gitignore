@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment variables — NUNCA commite no GitHub!
+.env
+.env.production
+.env.development
+# .env.example é seguro de commitar (não tem valores reais)
