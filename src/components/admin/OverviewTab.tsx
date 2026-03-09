@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, List, Phone, Clock, PhoneCall, PhoneMissed, PhoneOff } from "lucide-react";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
+  BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend,
 } from "recharts";
 
@@ -235,15 +235,15 @@ export function OverviewTab({ onNavigateTab }: OverviewTabProps) {
         {statCards.map((s) => (
           <Card
             key={s.label}
-            className={`glass-card-elevated cursor-pointer transition-all duration-150 hover:-translate-y-0.5 border-l-[3px] ${s.borderColor}`}
+            className={`bg-white border border-[#EEF2F7] rounded-[16px] p-2 transition-all duration-300 shadow-[0_10px_30px_rgba(17,24,39,0.04)] cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_15px_35px_rgba(17,24,39,0.08)] border-l-[3px] space-y-2 ${s.borderColor}`}
             onClick={s.action}
           >
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <span className="text-[13px] font-medium text-muted-foreground uppercase tracking-[0.3px]">{s.label}</span>
-              <s.icon className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="flex flex-row items-center justify-between pb-0 pt-3 px-4">
+              <span className="text-[12px] text-gray-400 font-medium tracking-wide uppercase">{s.label}</span>
+              <s.icon className="h-4 w-4 text-gray-400" />
             </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-bold tracking-[-1px] text-foreground">{s.value}</div>
+            <CardContent className="px-4 pb-4">
+              <div className="text-[26px] font-bold text-gray-900 leading-none">{s.value}</div>
             </CardContent>
           </Card>
         ))}
@@ -253,9 +253,9 @@ export function OverviewTab({ onNavigateTab }: OverviewTabProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Donut Chart */}
         {statusCounts.some((s) => s.value > 0) && (
-          <Card className="glass-card rounded-[18px]">
-            <CardHeader>
-              <CardTitle className="text-[13px] uppercase text-muted-foreground font-semibold tracking-[0.3px]">Distribuicao de Status</CardTitle>
+          <Card className="bg-white border border-[#EEF2F7] rounded-[16px] shadow-[0_10px_30px_rgba(17,24,39,0.03)] overflow-hidden">
+            <CardHeader className="border-b border-gray-50 bg-gray-50/50">
+              <CardTitle className="text-[12px] uppercase text-gray-500 font-bold tracking-[0.5px]">Distribuicao de Status</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={250}>
@@ -293,22 +293,28 @@ export function OverviewTab({ onNavigateTab }: OverviewTabProps) {
         )}
 
         {/* Daily Activity */}
-        <Card className="glass-card rounded-[18px]">
-          <CardHeader>
-            <CardTitle className="text-[13px] uppercase text-muted-foreground font-semibold tracking-[0.3px]">Atividade por Dia (14 dias)</CardTitle>
+        <Card className="bg-white border border-[#EEF2F7] rounded-[16px] shadow-[0_10px_30px_rgba(17,24,39,0.03)] overflow-hidden">
+          <CardHeader className="border-b border-gray-50 bg-gray-50/50">
+            <CardTitle className="text-[12px] uppercase text-gray-500 font-bold tracking-[0.5px]">Atividade por Dia (14 dias)</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={dailyActivity}>
-                <XAxis dataKey="date" tick={{ fill: "#303136", fontSize: 10 }} tickFormatter={(v) => v.slice(5)} />
-                <YAxis tick={{ fill: "#303136", fontSize: 10 }} />
+              <AreaChart data={dailyActivity} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#4F96FF" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#4F96FF" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="date" tick={{ fill: "#6B7280", fontSize: 11 }} tickFormatter={(v) => v.slice(5)} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "#6B7280", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={tooltipStyle}
                   formatter={(value: number) => [value, "Ligacoes"]}
                   labelFormatter={(label) => new Date(label + "T00:00:00").toLocaleDateString("pt-BR")}
                 />
-                <Bar dataKey="count" fill="#007AFF" opacity={0.8} radius={[4, 4, 0, 0]} />
-              </BarChart>
+                <Area type="monotone" dataKey="count" stroke="#4F96FF" strokeWidth={3} fillOpacity={1} fill="url(#colorCount)" />
+              </AreaChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
@@ -316,16 +322,16 @@ export function OverviewTab({ onNavigateTab }: OverviewTabProps) {
 
       {/* Lista Progress */}
       {listaProgress.length > 0 && (
-        <Card className="glass-card rounded-[18px]">
-          <CardHeader>
-            <CardTitle className="text-[13px] uppercase text-muted-foreground font-semibold tracking-[0.3px]">Progresso por Lista</CardTitle>
+        <Card className="bg-white border border-[#EEF2F7] rounded-[16px] shadow-[0_10px_30px_rgba(17,24,39,0.03)] overflow-hidden">
+          <CardHeader className="border-b border-gray-50 bg-gray-50/50">
+            <CardTitle className="text-[12px] uppercase text-gray-500 font-bold tracking-[0.5px]">Progresso por Lista</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <ResponsiveContainer width="100%" height={Math.max(150, listaProgress.length * 50)}>
               <BarChart data={listaProgress} layout="vertical" margin={{ left: 80 }}>
-                <XAxis type="number" tick={{ fill: "#303136", fontSize: 10 }} />
-                <YAxis type="category" dataKey="nome" tick={{ fill: "#303136", fontSize: 11 }} width={80} />
-                <Tooltip contentStyle={tooltipStyle} />
+                <XAxis type="number" tick={{ fill: "#6B7280", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="nome" tick={{ fill: "#4B5563", fontSize: 12, fontWeight: 500 }} width={80} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(79, 150, 255, 0.05)' }} />
                 <Bar dataKey="atendeu" stackId="a" fill={STATUS_COLORS.atendeu} name="Atendeu" />
                 <Bar dataKey="nao-atendeu" stackId="a" fill={STATUS_COLORS["nao-atendeu"]} name="Nao Atendeu" />
                 <Bar dataKey="caixa-postal" stackId="a" fill={STATUS_COLORS["caixa-postal"]} name="Caixa Postal" />
@@ -340,9 +346,9 @@ export function OverviewTab({ onNavigateTab }: OverviewTabProps) {
       )}
 
       {/* Listas Table */}
-      <Card className="glass-card">
-        <CardHeader>
-          <CardTitle className="text-[13px] uppercase text-muted-foreground font-semibold tracking-[0.3px]">Listas</CardTitle>
+      <Card className="bg-white border border-[#EEF2F7] rounded-[16px] shadow-[0_10px_30px_rgba(17,24,39,0.03)] overflow-hidden">
+        <CardHeader className="border-b border-gray-50 bg-gray-50/50">
+          <CardTitle className="text-[12px] uppercase text-gray-500 font-bold tracking-[0.5px]">Listas</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <Table>

@@ -100,35 +100,32 @@ export function SgiLayout({
             )}
 
             <aside
-                className={`fixed top-0 left-0 h-screen w-[260px] z-50 flex flex-col transition-transform duration-300
+                className={`fixed top-0 left-0 h-screen w-[260px] z-50 flex flex-col transition-transform duration-300 bg-white border-r
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
-                style={{ background: "#fff", boxShadow: "4px 0 20px rgba(0,0,0,0.06)", borderRadius: "0 20px 20px 0" }}
             >
                 {/* Logo */}
-                <div className="px-6 pt-7 pb-4 flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                        style={{ background: "#FB8C00" }}>
-                        <LayoutDashboard className="w-5 h-5 text-white" />
+                <div className="px-6 pt-7 pb-6 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary text-white shadow-sm shadow-primary/20">
+                        <LayoutDashboard className="w-5 h-5" />
                     </div>
                     <div>
-                        <p className="text-[15px] font-800 text-gray-900 leading-tight" style={{ fontWeight: 800 }}>SGI Hub</p>
-                        <p className="text-[11px] text-gray-400">Gestão Integrado v2</p>
+                        <p className="text-[16px] font-bold text-gray-900 leading-tight">SGI Hub</p>
+                        <p className="text-[12px] text-gray-500 font-medium mt-0.5">Gestão Integrada</p>
                     </div>
-                    <button className="lg:hidden ml-auto text-gray-400" onClick={() => setSidebarOpen(false)}>
+                    <button className="lg:hidden ml-auto text-gray-400 hover:bg-gray-100 p-1.5 rounded-lg" onClick={() => setSidebarOpen(false)}>
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
-                <div className="px-4 mt-1 mb-4">
-                    <div className="h-px" style={{ background: "rgba(0,0,0,0.06)" }} />
+                <div className="px-5 mb-4">
+                    <div className="h-px bg-gray-100" />
                 </div>
 
                 {/* Nav sections */}
-                <nav className="flex-1 overflow-y-auto px-4 space-y-5">
+                <nav className="flex-1 overflow-y-auto px-4 space-y-6">
                     {navItems.map(({ section, items }) => (
                         <div key={section}>
-                            <p className="text-[10px] font-700 text-gray-400 tracking-widest px-3 mb-2 uppercase"
-                                style={{ fontWeight: 700 }}>
+                            <p className="text-[11px] font-bold text-gray-400 tracking-wider px-3 mb-3 uppercase">
                                 {section}
                             </p>
                             <div className="space-y-1">
@@ -138,25 +135,21 @@ export function SgiLayout({
                                         <button
                                             key={key}
                                             onClick={() => handleNavClick(key)}
-                                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group"
-                                            style={active
-                                                ? { background: "#1A1A2E" }
-                                                : { background: "transparent" }
-                                            }
+                                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${active
+                                                    ? "bg-accent text-primary"
+                                                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                                                }`}
                                         >
-                                            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all"
-                                                style={active
-                                                    ? { background: "#FB8C00" }
-                                                    : { background: "rgba(0,0,0,0.05)" }
-                                                }>
-                                                <Icon className="w-4 h-4 transition-colors"
-                                                    style={{ color: active ? "#fff" : "#8D8D8D" }} />
+                                            {active && (
+                                                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-md" />
+                                            )}
+                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${active ? "bg-white shadow-sm text-primary" : "bg-gray-100/50 text-gray-400 group-hover:text-gray-600 group-hover:bg-gray-100"
+                                                }`}>
+                                                <Icon className="w-4 h-4" />
                                             </div>
-                                            <span className="text-[13px] font-600 transition-colors"
-                                                style={{ fontWeight: 600, color: active ? "#fff" : "#6B7280" }}>
+                                            <span className={`text-[13px] ${active ? "font-bold" : "font-medium"}`}>
                                                 {label}
                                             </span>
-                                            {active && <ChevronRight className="w-4 h-4 ml-auto text-white opacity-60" />}
                                         </button>
                                     );
                                 })}
@@ -164,103 +157,83 @@ export function SgiLayout({
                         </div>
                     ))}
                 </nav>
-
             </aside>
 
             {/* ── MAIN AREA ───────────────────────────────────────────────────── */}
             <div className="flex-1 flex flex-col min-h-screen lg:ml-[260px]">
 
-                {/* ── TOPBAR ──────────────────────────────────────────────────── */}
-                <header className="sticky top-0 z-30 flex items-center gap-4 px-6 py-4"
-                    style={{ background: "rgba(248,249,250,0.9)", backdropFilter: "blur(12px)" }}>
-                    {/* Mobile menu button */}
-                    <button className="lg:hidden p-2 rounded-xl" style={{ background: "#fff" }}
-                        onClick={() => setSidebarOpen(true)}>
-                        <Menu className="w-5 h-5 text-gray-600" />
-                    </button>
-
-                    {/* Breadcrumb */}
-                    <div className="flex items-center gap-1 text-[13px] flex-1">
-                        <span className="text-gray-400">Páginas</span>
-                        <span className="text-gray-300 mx-1">/</span>
-                        <span className="font-700 text-gray-700" style={{ fontWeight: 700 }}>{currentTitle}</span>
-                    </div>
-
-                    {/* Search */}
-                    <div className="relative hidden sm:flex items-center">
-                        <Search className="absolute left-3 w-4 h-4 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Digite aqui..."
-                            className="pl-9 pr-4 py-2.5 text-[13px] rounded-xl outline-none w-48 focus:w-64 transition-all"
-                            style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)", color: "#374151" }}
-                        />
-                    </div>
-
-                    {/* Topbar actions */}
-                    <div className="flex items-center gap-2">
-                        <button
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-[13px] font-700 shadow-md transition-all hover:opacity-90 active:scale-95"
-                            style={{ background: "#FB8C00", fontWeight: 700, boxShadow: "0 4px 15px rgba(251,140,0,0.35)" }}
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span className="hidden sm:inline">Novo</span>
-                        </button>
-                        <button className="w-9 h-9 rounded-xl flex items-center justify-center relative"
-                            style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.06)" }}>
-                            <Bell className="w-4 h-4 text-gray-500" />
-                            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full"
-                                style={{ background: "#FB8C00" }} />
-                        </button>
-                        <button onClick={handleLogout}
-                            className="w-9 h-9 rounded-xl flex items-center justify-center"
-                            style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.06)" }}
-                            title="Sair">
-                            <LogOut className="w-4 h-4 text-gray-500" />
-                        </button>
-                        <div className="w-9 h-9 rounded-xl flex items-center justify-center font-700"
-                            style={{ background: "#1A1A2E", color: "#FB8C00", fontSize: 13, fontWeight: 800 }}>
-                            {admin?.nome?.[0]?.toUpperCase() ?? "A"}
+                {/* ── TOP NAV E CABEÇALHO COMPACTO ───────────────────────────── */}
+                <div className="bg-white/80 backdrop-blur-md border-b sticky top-0 z-30 transition-all shadow-sm">
+                    {/* Switcher Tabs - Pill Style */}
+                    <div className="flex justify-center pt-4 pb-2 px-6">
+                        <div className="flex p-1 bg-gray-100 rounded-full shadow-inner max-w-[600px] w-full">
+                            <button
+                                onClick={() => onChangeModule("lista-telefonica")}
+                                className={`flex-1 flex flex-row items-center justify-center gap-2 py-2 text-[14px] font-medium transition-all duration-300 rounded-full h-[38px] ${activeModule === "lista-telefonica"
+                                    ? "bg-white text-primary shadow-sm"
+                                    : "text-muted-foreground hover:bg-gray-200/50"
+                                    }`}
+                            >
+                                <Phone className={`w-4 h-4 ${activeModule === "lista-telefonica" ? "text-primary" : "text-muted-foreground"}`} />
+                                Lista Telefônica
+                            </button>
+                            <button
+                                onClick={() => onChangeModule("gestao-predios")}
+                                className={`flex-1 flex flex-row items-center justify-center gap-2 py-2 text-[14px] font-medium transition-all duration-300 rounded-full h-[38px] ${activeModule === "gestao-predios"
+                                    ? "bg-white text-primary shadow-sm"
+                                    : "text-muted-foreground hover:bg-gray-200/50"
+                                    }`}
+                            >
+                                <Building2 className={`w-4 h-4 ${activeModule === "gestao-predios" ? "text-primary" : "text-muted-foreground"}`} />
+                                Gestão de Prédios
+                            </button>
                         </div>
                     </div>
-                </header>
 
-                {/* ── MODULE SWITCHER ─────────────────────────────────────────── */}
-                <div className="px-6 pt-2 pb-4">
-                    <div className="flex rounded-2xl overflow-hidden shadow-sm"
-                        style={{ border: "1px solid rgba(0,0,0,0.06)" }}>
-                        <button
-                            onClick={() => onChangeModule("lista-telefonica")}
-                            className="flex-1 flex items-center justify-center gap-2 py-3.5 text-[14px] transition-all duration-200"
-                            style={activeModule === "lista-telefonica"
-                                ? { background: "#1A1A2E", color: "#fff", fontWeight: 700 }
-                                : { background: "#fff", color: "#6B7280", fontWeight: 600 }
-                            }
-                        >
-                            <div className="w-6 h-6 rounded-lg flex items-center justify-center"
-                                style={{ background: activeModule === "lista-telefonica" ? "rgba(251,140,0,0.25)" : "rgba(0,0,0,0.05)" }}>
-                                <Phone className="w-3.5 h-3.5"
-                                    style={{ color: activeModule === "lista-telefonica" ? "#FB8C00" : "#9CA3AF" }} />
-                            </div>
-                            Lista Telefônica
+                    {/* TopBar principal condensada */}
+                    <header className="flex items-center gap-4 px-6 py-[14px]">
+                        <button className="lg:hidden p-2 rounded-xl bg-white border" onClick={() => setSidebarOpen(true)}>
+                            <Menu className="w-5 h-5 text-gray-600" />
                         </button>
-                        <div className="w-px" style={{ background: "rgba(0,0,0,0.06)" }} />
-                        <button
-                            onClick={() => onChangeModule("gestao-predios")}
-                            className="flex-1 flex items-center justify-center gap-2 py-3.5 text-[14px] transition-all duration-200"
-                            style={activeModule === "gestao-predios"
-                                ? { background: "#1A1A2E", color: "#fff", fontWeight: 700 }
-                                : { background: "#fff", color: "#6B7280", fontWeight: 600 }
-                            }
-                        >
-                            <div className="w-6 h-6 rounded-lg flex items-center justify-center"
-                                style={{ background: activeModule === "gestao-predios" ? "rgba(251,140,0,0.25)" : "rgba(0,0,0,0.05)" }}>
-                                <Building2 className="w-3.5 h-3.5"
-                                    style={{ color: activeModule === "gestao-predios" ? "#FB8C00" : "#9CA3AF" }} />
+
+                        <div className="flex-1 flex flex-col justify-center">
+                            <h1 className="text-[22px] font-bold tracking-tight text-gray-900 leading-none mb-1">
+                                Sistema de Gestão Integrado
+                            </h1>
+                            <div className="flex items-center gap-1.5 text-[13px] text-gray-500 font-medium">
+                                <span>{currentTitle}</span>
                             </div>
-                            Gestão de Prédios
-                        </button>
-                    </div>
+                        </div>
+
+                        <div className="relative hidden sm:flex items-center">
+                            <Search className="absolute left-3 w-4 h-4 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Buscar..."
+                                className="pl-9 pr-4 py-2 text-[13px] rounded-full outline-none w-48 focus:w-64 transition-all bg-gray-50 border border-gray-200 text-gray-800 focus:bg-white focus:border-primary focus:ring-1 focus:ring-primary"
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-2 lg:gap-3">
+                            <button className="flex items-center gap-2 px-4 py-2 rounded-full text-white text-[13px] font-semibold bg-primary hover:bg-secondary transition-all shadow-md shadow-primary/20 active:scale-95">
+                                <Plus className="w-4 h-4" />
+                                <span className="hidden sm:inline">Novo</span>
+                            </button>
+
+                            <button className="w-[38px] h-[38px] rounded-full flex items-center justify-center relative bg-white border hover:bg-gray-50 transition-colors">
+                                <Bell className="w-4 h-4 text-gray-500" />
+                                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-destructive border-[2px] border-white" />
+                            </button>
+
+                            <button onClick={handleLogout} className="w-[38px] h-[38px] rounded-full flex items-center justify-center bg-white border hover:bg-gray-50 transition-colors" title="Sair do SGI">
+                                <LogOut className="w-4 h-4 text-gray-500" />
+                            </button>
+
+                            <div className="w-[38px] h-[38px] rounded-full flex items-center justify-center font-bold bg-primary/10 text-primary" style={{ fontSize: 13 }}>
+                                {admin?.nome?.[0]?.toUpperCase() ?? "A"}
+                            </div>
+                        </div>
+                    </header>
                 </div>
 
                 {/* ── CONTENT ─────────────────────────────────────────────────── */}

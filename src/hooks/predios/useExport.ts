@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { supabasePredios as supabase } from '@/integrations/supabase/predios';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/predios/useAuth';
 import { useAuditLog } from '@/hooks/predios/useAuditLog';
 import { toast } from '@/hooks/use-toast';
@@ -22,13 +22,13 @@ export function useExport() {
     try {
       // Fetch buildings
       let query = supabase
-        .from('buildings')
-        .select('*, territories(name)')
-        .order('territory_id')
-        .order('name');
+        .from('predios')
+        .select('*')
+        .order('territorio')
+        .order('nome');
 
       if (options.territoryId) {
-        query = query.eq('territory_id', options.territoryId);
+        query = query.eq('territorio', options.territoryId.toString());
       }
 
       const { data: buildings, error } = await query;
@@ -39,21 +39,18 @@ export function useExport() {
       }
 
       // Format data
-      type BuildingRow = typeof buildings[number] & { territories?: { name?: string } };
-      const rows = (buildings as BuildingRow[]).map((b) => ({
-        'Território': b.territories?.name || `Território ${b.territory_id}`,
-        'Nome': b.name,
-        'Endereço': b.address,
-        'Andares': b.floors_count,
-        'Apts/Andar': b.apartments_per_floor || '-',
-        'Total Apts': b.apartments_total || '-',
-        'Ciclo (dias)': b.custom_cycle_days || b.default_cycle_days,
-        'Última Carta': b.last_letter_sent_at || '-',
-        'Último Trabalho': b.last_worked_at || '-',
-        'Andares Feitos': b.progress_floors_done,
-        'Apts Feitos': b.progress_apartments_done,
-        'Notas': b.notes || '-',
-        'Criado em': new Date(b.created_at).toLocaleDateString('pt-BR'),
+      const rows = buildings.map((b) => ({
+        'Território': b.territorio || '-',
+        'Nome': b.nome,
+        'Endereço': b.endereco || '-',
+        'Andares': b.andares || '-',
+        'Apts/Andar': b.aptos_por_andar || '-',
+        'Total Apts': b.total_aptos || '-',
+        'Observações': b.observacoes || '-',
+        'Cartas Entregues': b.cartas_entregues_historico || '-',
+        'Lista Original': b.lista_original || '-',
+        'Ativo': b.ativo ? 'Sim' : 'Não',
+        'Criado em': new Date(b.criado_em).toLocaleDateString('pt-BR'),
       }));
 
       if (options.format === 'csv') {

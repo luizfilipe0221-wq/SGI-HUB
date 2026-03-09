@@ -12,24 +12,14 @@ const navItems = [{
   path: '/predios',
   permission: PERMISSIONS.VIEW_DASHBOARD
 }, {
-  icon: MapPin,
-  label: 'Territórios',
-  path: '/predios/territories',
-  permission: PERMISSIONS.VIEW_PREDIOS
-}, {
   icon: Building2,
   label: 'Prédios',
   path: '/predios/buildings',
   permission: PERMISSIONS.VIEW_PREDIOS
 }, {
-  icon: FileStack,
-  label: 'Gerar Listas',
-  path: '/predios/generate',
-  permission: PERMISSIONS.GENERATE_LISTS
-}, {
   icon: ListChecks,
-  label: 'Listas Geradas',
-  path: '/predios/lists',
+  label: 'Lotes de Trabalho',
+  path: '/predios/lotes',
   permission: PERMISSIONS.GENERATE_LISTS
 }, {
   icon: Upload,

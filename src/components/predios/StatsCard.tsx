@@ -13,9 +13,9 @@ interface StatsCardProps {
 
 export function StatsCard({ title, value, icon: Icon, variant = 'default', onClick, href }: StatsCardProps) {
   const navigate = useNavigate();
-  
+
   const isClickable = !!onClick || !!href;
-  
+
   const handleClick = () => {
     if (href) {
       navigate(href);
@@ -39,23 +39,24 @@ export function StatsCard({ title, value, icon: Icon, variant = 'default', onCli
       tabIndex={isClickable ? 0 : undefined}
       aria-label={isClickable ? `${title}: ${value}. Clique para ver detalhes` : undefined}
       className={cn(
-        "glass-card rounded-xl p-5 transition-all duration-200",
+        "bg-white border border-[#EEF2F7] rounded-[16px] p-4 transition-all duration-300",
+        "shadow-[0_10px_30px_rgba(17,24,39,0.06)] flex flex-col justify-between h-full gap-2",
         isClickable && [
           "cursor-pointer",
-          "hover:-translate-y-1 hover:shadow-lg",
-          "active:translate-y-0 active:shadow-md",
+          "hover:-translate-y-[2px] hover:shadow-[0_15px_35px_rgba(17,24,39,0.08)]",
+          "active:translate-y-0",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         ]
       )}
     >
       <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground font-medium">{title}</p>
+        <div className="flex flex-col gap-1">
+          <p className="text-[12px] text-gray-400 font-medium tracking-wide uppercase">{title}</p>
           <p className={cn(
-            "text-3xl font-bold mt-1",
+            "text-[26px] font-bold text-gray-900 leading-none",
             variant === 'expired' && "text-destructive",
-            variant === 'warning' && "text-warning",
-            variant === 'success' && "text-success"
+            variant === 'warning' && "text-amber-500",
+            variant === 'success' && "text-emerald-500"
           )}>
             {value}
           </p>

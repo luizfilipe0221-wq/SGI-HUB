@@ -28,7 +28,7 @@ export function PermissionGate({
     );
   }
 
-  const hasAccess = Array.isArray(permission) 
+  const hasAccess = Array.isArray(permission)
     ? canAccess(permission)
     : hasPermission(permission);
 

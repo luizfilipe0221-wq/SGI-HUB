@@ -15,15 +15,6 @@ const modules = [
         border: 'hover:border-blue-300',
     },
     {
-        icon: MapPin,
-        label: 'Territórios',
-        description: 'Gerencie os territórios de 1 a 31',
-        path: '/predios/territories',
-        color: 'from-violet-500/10 to-violet-600/5',
-        iconColor: 'text-violet-500',
-        border: 'hover:border-violet-300',
-    },
-    {
         icon: Building2,
         label: 'Prédios',
         description: 'Cadastre e gerencie os prédios',
@@ -33,22 +24,13 @@ const modules = [
         border: 'hover:border-sky-300',
     },
     {
-        icon: FileStack,
-        label: 'Gerar Listas',
-        description: 'Crie listas automáticas de prédios',
-        path: '/predios/generate',
+        icon: ListChecks,
+        label: 'Lotes de Trabalho',
+        description: 'Gerencie grupos de prédios e entregas',
+        path: '/predios/lotes',
         color: 'from-emerald-500/10 to-emerald-600/5',
         iconColor: 'text-emerald-500',
         border: 'hover:border-emerald-300',
-    },
-    {
-        icon: ListChecks,
-        label: 'Listas Geradas',
-        description: 'Acompanhe e execute as listas',
-        path: '/predios/lists',
-        color: 'from-teal-500/10 to-teal-600/5',
-        iconColor: 'text-teal-500',
-        border: 'hover:border-teal-300',
     },
     {
         icon: Upload,
@@ -117,27 +99,20 @@ export default function PrediosHome() {
                         <button
                             key={mod.path}
                             onClick={() => navigate(mod.path)}
-                            className={`
-                group text-left rounded-2xl border border-border/60 bg-gradient-to-br ${mod.color}
-                p-5 transition-all duration-200 cursor-pointer
-                hover:shadow-lg hover:scale-[1.02] hover:-translate-y-0.5 ${mod.border}
-                hover:border-opacity-60 active:scale-[0.99]
-              `}
-                            style={{
-                                backdropFilter: 'blur(12px)',
-                                WebkitBackdropFilter: 'blur(12px)',
-                            }}
+                            className="group text-left rounded-[16px] border border-[#EEF2F7] bg-white p-5 transition-all duration-300 cursor-pointer shadow-[0_4px_20px_rgba(17,24,39,0.03)] hover:shadow-[0_10px_30px_rgba(17,24,39,0.08)] hover:-translate-y-[2px] active:translate-y-0 relative overflow-hidden flex flex-col items-start"
                         >
+                            {/* Borda superior colorida (top accent) */}
+                            <div className={`absolute top-0 left-0 right-0 h-[3px] opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-r ${mod.color}`} />
+
                             <div
-                                className="w-11 h-11 rounded-xl flex items-center justify-center mb-3 transition-transform duration-200 group-hover:scale-110"
-                                style={{ background: 'rgba(255,255,255,0.7)' }}
+                                className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 bg-gradient-to-br ${mod.color}`}
                             >
-                                <Icon className={`h-5 w-5 ${mod.iconColor}`} />
+                                <Icon className={`h-6 w-6 ${mod.iconColor}`} />
                             </div>
-                            <h3 className="text-[15px] font-semibold text-foreground mb-1">
+                            <h3 className="text-[16px] font-bold text-gray-900 mb-1.5 transition-colors group-hover:text-primary">
                                 {mod.label}
                             </h3>
-                            <p className="text-[12px] text-muted-foreground leading-relaxed">
+                            <p className="text-[13px] text-gray-500 leading-relaxed font-medium">
                                 {mod.description}
                             </p>
                         </button>

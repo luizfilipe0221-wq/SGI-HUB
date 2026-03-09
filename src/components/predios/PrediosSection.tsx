@@ -11,13 +11,11 @@ import { SgiLayout } from '@/components/layout/SgiLayout';
 import { AppLayout } from '@/components/predios/layout/AppLayout';
 import PrediosHome from '@/pages/predios/PrediosHome';
 import Dashboard from '@/pages/predios/Dashboard';
-import Territories from '@/pages/predios/Territories';
+import LotesList from '@/pages/predios/lotes/LotesList';
+import LoteDetail from '@/pages/predios/lotes/LoteDetail';
 import Buildings from '@/pages/predios/Buildings';
 import BuildingForm from '@/pages/predios/BuildingForm';
 import BuildingDetail from '@/pages/predios/BuildingDetail';
-import GenerateLists from '@/pages/predios/GenerateLists';
-import GeneratedListsPage from '@/pages/predios/GeneratedListsPage';
-import ListDetail from '@/pages/predios/ListDetail';
 import ManageUsers from '@/pages/predios/ManageUsers';
 import AuditLogs from '@/pages/predios/AuditLogs';
 import Uploads from '@/pages/predios/Uploads';
@@ -67,13 +65,11 @@ export function PrediosSection() {
                         <Route element={<AppLayout />}>
                             <Route index element={<PrediosHome />} />
                             <Route path="dashboard" element={<Dashboard />} />
-                            <Route path="territories" element={<Territories />} />
+                            <Route path="lotes" element={<LotesList />} />
+                            <Route path="lotes/:id" element={<LoteDetail />} />
                             <Route path="buildings" element={<Buildings />} />
                             <Route path="buildings/new" element={<BuildingForm />} />
                             <Route path="buildings/:id" element={<BuildingDetail />} />
-                            <Route path="generate" element={<GenerateLists />} />
-                            <Route path="lists" element={<GeneratedListsPage />} />
-                            <Route path="lists/:id" element={<ListDetail />} />
                             <Route path="users" element={<ManageUsers />} />
                             <Route path="audit-logs" element={<AuditLogs />} />
                             <Route path="uploads" element={<Uploads />} />

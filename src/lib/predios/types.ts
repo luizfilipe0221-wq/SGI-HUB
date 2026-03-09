@@ -1,106 +1,106 @@
-// Building types
-export interface Building {
-  id: string;
-  user_id: string;
-  territory_id: number;
-  name: string;
-  address: string;
-  floors_count: number;
-  apartments_per_floor: number | null;
-  apartments_total: number | null;
-  notes: string | null;
-  default_cycle_days: number;
-  custom_cycle_days: number | null;
-  last_worked_at: string | null;
-  last_letter_sent_at: string | null;
-  progress_floors_done: number;
-  progress_apartments_done: number;
-  created_at: string;
-  updated_at: string;
-  // New columns for unit generation
-  units_generated: boolean;
-  units_generated_at: string | null;
-  units_generated_by: string | null;
-  numbering_starts_at: number;
-  apartments_per_floor_config: number | null;
-}
-
-export interface BuildingWithStatus extends Building {
-  due_date: Date | null;
-  days_until_due: number;
-  status: 'expired' | 'warning' | 'success' | 'completed' | 'not_started';
-  status_label: string;
-  // Apartment-based progress
-  total_apartments: number;
-  done_apartments: number;
-  last_letter_done_at: string | null;
-}
-
-export interface Territory {
+export interface Predio {
   id: number;
-  name: string | null;
-  user_id: string;
-  created_at: string;
+  nome: string;
+  endereco: string | null;
+  territorio: string | null;
+  andares: string | null;
+  aptos_por_andar: string | null;
+  total_aptos: number;
+  observacoes: string | null;
+  cartas_entregues_historico: string | null;
+  lista_original: number | null;
+  ativo: boolean;
+  criado_em: string;
 }
 
-export interface TerritoryWithStats extends Territory {
-  buildings_count: number;
-  expired_count: number;
+export interface Lote {
+  id: number;
+  nome: string;
+  descricao: string | null;
+  ativo: boolean;
+  finalizado: boolean;
+  criado_em: string;
+  finalizado_em: string | null;
 }
 
-export interface BuildingActivityLog {
-  id: string;
-  building_id: string;
-  user_id: string;
-  activity_type: 'WORKED' | 'LETTER_SENT' | 'NOTE' | 'PROGRESS_UPDATE';
-  activity_date: string;
-  letters_count: number | null;
-  notes: string | null;
-  created_at: string;
+export interface LotePredio {
+  id: number;
+  lote_id: number;
+  predio_id: number;
+  meta_cartas: number;
+  cartas_entregues: number;
+  status: 'nao_iniciado' | 'em_andamento' | 'concluido' | 'pendente';
+  concluido_manualmente: boolean;
+  criado_em: string;
+  concluido_em: string | null;
 }
 
-export interface GeneratedList {
-  id: string;
-  user_id: string;
-  name: string;
-  config_json: ListConfig;
-  created_at: string;
+export interface Entrega {
+  id: number;
+  lote_predio_id: number;
+  apartamento: string;
+  entregue: boolean;
+  observacao: string | null;
+  entregue_em: string;
 }
 
-export interface ListPatternConfig {
-  list_number: number;
-  territory_pattern: number[];
-  fallback_used?: boolean;
-  fallback_territories?: number[];
+export interface AuditoriaPredio {
+  id: number;
+  predio_id: number;
+  campo: string;
+  valor_antigo: string | null;
+  valor_novo: string | null;
+  alterado_em: string;
 }
 
-export interface ListConfig {
-  lists_count: number;
-  per_list: number;
-  // Legacy single pattern (for backwards compatibility)
-  territory_pattern?: number[];
-  // New: individual patterns per list
-  patterns_per_list?: ListPatternConfig[];
-  avoid_recent_days: number;
-  prioritize_mode: 'expired';
-  letters_mode: 'PER_FLOOR' | 'PER_APARTMENT';
-  letters_planned: number;
+// ==============
+// Views
+// ==============
+
+export interface PainelLoteRow {
+  lote_id: number;
+  lote_nome: string;
+  ativo: boolean;
+  finalizado: boolean;
+  lote_predio_id: number;
+  meta_cartas: number;
+  cartas_entregues: number;
+  status: 'nao_iniciado' | 'em_andamento' | 'concluido' | 'pendente';
+  concluido_em: string | null;
+  predio_id: number;
+  predio_nome: string;
+  endereco: string | null;
+  territorio: string | null;
+  total_aptos: number;
+  andares: string | null;
+  aptos_por_andar: string | null;
+  observacoes: string | null;
+  progresso_pct: number;
+  excedeu_meta: boolean;
 }
 
-export interface GeneratedListItem {
-  id: string;
-  generated_list_id: string;
-  user_id: string;
-  list_number: number;
-  position_in_list: number;
-  building_id: string;
-  letters_planned: number;
-  letters_mode: 'PER_FLOOR' | 'PER_APARTMENT';
-  snapshot_last_letter_sent_at: string | null;
-  snapshot_due_date: string;
-  is_completed: boolean;
-  completed_at: string | null;
-  completed_letters_count: number;
-  created_at: string;
-  building?: Building;
+export interface EstatisticasLoteRow {
+  lote_id: number;
+  lote_nome: string;
+  ativo: boolean;
+  finalizado: boolean;
+  total_predios: number;
+  concluidos: number;
+  em_andamento: number;
+  nao_iniciados: number;
+  pendentes: number;
+  total_cartas_entregues: number;
+  total_meta_cartas: number;
+  progresso_geral_pct: number;
+}
+
+export interface PredioPendenteRow {
+  id: number;
+  nome: string;
+  endereco: string | null;
+  territorio: string | null;
+  total_aptos: number;
+  vezes_na_lista: number;
+  ultima_vez_em: string | null;
+  tem_pendencia: boolean | null;
 }

@@ -1,5 +1,5 @@
-/* Nunito — fonte principal do SGI */
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
+/* Inter — fonte principal do SGI Azul */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,37 +7,43 @@
 
 @layer base {
   :root {
-    --background: 0 0% 96.1%;
-    --foreground: 0 0% 0%;
+    /* Tema Azul (Soft UI) */
+    --background: 220 33% 98%;
+    /* #F8F9FC */
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 211 100% 50%;
+    /* Azul Principal: #4F96FF -> HSL: 216 100% 65% */
+    --primary: 216 100% 65%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 0%;
+    /* Azul Hover (Escuro): #2D7DD2 -> HSL: 211 65% 50% */
+    --secondary: 211 65% 50%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 240 2% 92%;
-    --muted-foreground: 240 2% 19%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 10%;
+    --accent: 214 100% 97%;
+    /* #EFF6FF - Azul super claro para fundos */
+    --accent-foreground: 216 100% 65%;
 
-    --destructive: 4 90% 58%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 0% / 0.08;
-    --input: 0 0% 0% / 0.1;
-    --ring: 211 100% 50%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 216 100% 65%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
+    /* 16px */
 
-    /* Status colors — SGI principal */
+    /* Status colors — SGI principal (mantidos intactos) */
     --status-atendeu: 142 71% 45%;
     --status-nao-atendeu: 48 100% 50%;
     --status-caixa-postal: 274 53% 60%;
@@ -47,15 +53,15 @@
     --status-revisita: 240 2% 19%;
     --status-pendente: 0 0% 0% / 0.06;
 
-    /* Sidebar — SGI principal (branca) */
+    /* Sidebar */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 0 0% 10%;
-    --sidebar-primary: 211 100% 50%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 216 100% 65%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 96%;
-    --sidebar-accent-foreground: 0 0% 10%;
-    --sidebar-border: 0 0% 0% / 0.08;
-    --sidebar-ring: 211 100% 50%;
+    --sidebar-accent: 214 100% 97%;
+    --sidebar-accent-foreground: 216 100% 65%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 216 100% 65%;
   }
 }
 
@@ -66,48 +72,35 @@
 
   body {
     @apply bg-background text-foreground;
-    /* Nunito alinhada com o @import acima */
-    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
-    background-color: #f5f5f7;
-    background-image:
-      radial-gradient(circle at 20% 20%, rgba(0, 122, 255, 0.04) 0%, transparent 50%),
-      radial-gradient(circle at 80% 80%, rgba(175, 82, 222, 0.03) 0%, transparent 50%);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     min-height: 100vh;
   }
 }
 
 @layer utilities {
 
-  /* Glass card */
+  /* Soft UI / Cloud Cards (Substituindo o antigo Glass) */
   .glass-card {
-    background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.9);
-    border-radius: 18px;
-    box-shadow:
-      0 1px 0 0 rgba(255, 255, 255, 0.8) inset,
-      0 4px 24px rgba(0, 0, 0, 0.06),
-      0 1px 3px rgba(0, 0, 0, 0.04);
+    background: #FFFFFF;
+    border: 1px solid #EEF2F7;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(17, 24, 39, 0.03);
+    transition: all 0.2s ease-in-out;
   }
 
   .glass-card-elevated {
-    background: rgba(255, 255, 255, 0.88);
-    backdrop-filter: blur(40px) saturate(200%);
-    -webkit-backdrop-filter: blur(40px) saturate(200%);
-    border: 1px solid rgba(255, 255, 255, 1);
-    border-radius: 22px;
-    box-shadow:
-      0 1px 0 0 rgba(255, 255, 255, 1) inset,
-      0 8px 40px rgba(0, 0, 0, 0.08),
-      0 2px 8px rgba(0, 0, 0, 0.04);
+    background: #FFFFFF;
+    border: 1px solid #EEF2F7;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(17, 24, 39, 0.06);
+    transition: all 0.2s ease-in-out;
   }
 
   .glass-header {
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(30px) saturate(200%);
-    -webkit-backdrop-filter: blur(30px) saturate(200%);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid #EEF2F7;
   }
 
   /* Status badge styles — SGI principal */
