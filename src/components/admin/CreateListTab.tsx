@@ -238,8 +238,9 @@ export function CreateListTab() {
       setLinks(generatedLinks);
       setShowModal(true);
       toast({ title: "Sucesso!", description: "Lista criada e links gerados." });
-    } catch (err: any) {
-      toast({ title: "Erro", description: err?.message || "Erro ao criar lista.", variant: "destructive" });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao criar lista.";
+      toast({ title: "Erro", description: msg, variant: "destructive" });
     } finally {
       setLoading(false);
     }

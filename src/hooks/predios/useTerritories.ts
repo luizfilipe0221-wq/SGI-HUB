@@ -1,99 +1,66 @@
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabasePredios as supabase } from '@/integrations/supabase/predios';
 import { TerritoryWithStats, Building } from '@/lib/predios/types';
-import { calculateBuildingStatus, ApartmentStats, sortBuildingsByPriority } from '@/lib/predios/building-utils';
+import { calculateBuildingStatus, sortBuildingsByPriority } from '@/lib/predios/building-utils';
+import { fetchApartmentStatsForBuildings } from '@/lib/predios/apartment-stats';
 import { useAuth } from './useAuth';
 
-interface ApartmentAggregation {
-  building_id: string;
-  total: number;
-  done: number;
-  last_done_at: string | null;
-}
-
-/**
- * Fetch apartment stats for all buildings in a single query.
- * Returns a map of building_id -> ApartmentStats
- */
-async function fetchApartmentStatsForBuildings(buildingIds: string[]): Promise<Map<string, ApartmentStats>> {
-  if (buildingIds.length === 0) return new Map();
-  
-  // Fetch all apartments for the given buildings
-  const { data, error } = await supabase
-    .from('building_apartments')
-    .select('building_id, letter_done, letter_done_at')
-    .in('building_id', buildingIds);
-  
-  if (error) throw error;
-  
-  // Aggregate stats per building
-  const statsMap = new Map<string, ApartmentStats>();
-  
-  // Initialize all buildings with zero stats
-  buildingIds.forEach(id => {
-    statsMap.set(id, { total: 0, done: 0, lastDoneAt: null });
-  });
-  
-  // Aggregate apartment data
-  (data || []).forEach(apt => {
-    const current = statsMap.get(apt.building_id)!;
-    current.total++;
-    
-    if (apt.letter_done) {
-      current.done++;
-      
-      // Track latest letter_done_at
-      if (apt.letter_done_at) {
-        if (!current.lastDoneAt || apt.letter_done_at > current.lastDoneAt) {
-          current.lastDoneAt = apt.letter_done_at;
-        }
-      }
-    }
-  });
-  
-  return statsMap;
-}
+/** Query defaults — avoid excessive re-fetches */
+const QUERY_DEFAULTS = {
+  staleTime: 60_000,
+  refetchOnWindowFocus: false,
+} as const;
 
 export function useTerritories() {
+  const queryClient = useQueryClient();
   const { user } = useAuth();
+
+  // Real-time: invalidate territories when buildings or territories change
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('territories-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'territories' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['territories'] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'buildings' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['territories'] });
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, queryClient]);
 
   return useQuery({
     queryKey: ['territories'],
+    enabled: !!user,
+    ...QUERY_DEFAULTS,
     queryFn: async (): Promise<TerritoryWithStats[]> => {
-      // Get territories from database
-      const { data: territories, error: terrError } = await supabase
-        .from('territories')
-        .select('*')
-        .order('id');
+      const [{ data: territories, error: terrError }, { data: buildings, error: buildError }] =
+        await Promise.all([
+          supabase.from('territories').select('*').order('id'),
+          supabase.from('buildings').select('*'),
+        ]);
 
       if (terrError) throw terrError;
-
-      // Get all buildings
-      const { data: buildings, error: buildError } = await supabase
-        .from('buildings')
-        .select('*');
-
       if (buildError) throw buildError;
 
       const buildingsList = (buildings || []) as Building[];
       const buildingIds = buildingsList.map(b => b.id);
-      
-      // Fetch apartment stats for all buildings
+
       const apartmentStats = await fetchApartmentStatsForBuildings(buildingIds);
 
-      // Calculate status for each building using apartment data
-      const buildingsWithStatus = buildingsList.map(b => 
+      const buildingsWithStatus = buildingsList.map(b =>
         calculateBuildingStatus(b, apartmentStats.get(b.id))
       );
 
-      // Create a map of existing territories
+      // Build territory map from DB data
       const territoryMap = new Map<number, TerritoryWithStats>();
-      
-      // Initialize with database territories
+
       (territories || []).forEach(territory => {
-        const territoryBuildings = buildingsWithStatus.filter(
-          b => b.territory_id === territory.id
-        );
+        const territoryBuildings = buildingsWithStatus.filter(b => b.territory_id === territory.id);
         territoryMap.set(territory.id, {
           ...territory,
           buildings_count: territoryBuildings.length,
@@ -107,10 +74,7 @@ export function useTerritories() {
         if (territoryMap.has(i)) {
           allTerritories.push(territoryMap.get(i)!);
         } else {
-          // Create a placeholder territory for ones not in database
-          const territoryBuildings = buildingsWithStatus.filter(
-            b => b.territory_id === i
-          );
+          const territoryBuildings = buildingsWithStatus.filter(b => b.territory_id === i);
           allTerritories.push({
             id: i,
             name: null,
@@ -124,7 +88,6 @@ export function useTerritories() {
 
       return allTerritories;
     },
-    enabled: !!user,
   });
 }
 
@@ -133,8 +96,9 @@ export function useDashboardStats() {
 
   return useQuery({
     queryKey: ['dashboard-stats'],
+    enabled: !!user,
+    ...QUERY_DEFAULTS,
     queryFn: async () => {
-      // Get all buildings
       const { data: buildings, error } = await supabase
         .from('buildings')
         .select('*');
@@ -143,26 +107,22 @@ export function useDashboardStats() {
 
       const buildingsList = (buildings || []) as Building[];
       const buildingIds = buildingsList.map(b => b.id);
-      
-      // Fetch apartment stats for all buildings
+
       const apartmentStats = await fetchApartmentStatsForBuildings(buildingIds);
 
-      // Calculate status for each building using apartment data
-      const buildingsWithStatus = buildingsList.map(b => 
+      const buildingsWithStatus = buildingsList.map(b =>
         calculateBuildingStatus(b, apartmentStats.get(b.id))
       );
 
-      // Sort buildings by priority (expired first, then warning, etc.)
       const sortedBuildings = sortBuildingsByPriority(buildingsWithStatus);
 
-      // Calculate counts
       const expired = sortedBuildings.filter(b => b.status === 'expired').length;
       const warning7 = sortedBuildings.filter(b => b.status === 'warning' && b.days_until_due <= 7).length;
-      const warning15 = sortedBuildings.filter(b => 
-        (b.status === 'warning') || 
+      const warning15 = sortedBuildings.filter(b =>
+        (b.status === 'warning') ||
         (b.status === 'success' && b.days_until_due <= 15)
       ).length;
-      const onTime = sortedBuildings.filter(b => 
+      const onTime = sortedBuildings.filter(b =>
         b.status === 'success' && b.days_until_due > 15
       ).length;
       const completed = sortedBuildings.filter(b => b.status === 'completed').length;
@@ -179,6 +139,5 @@ export function useDashboardStats() {
         buildings: sortedBuildings,
       };
     },
-    enabled: !!user,
   });
 }

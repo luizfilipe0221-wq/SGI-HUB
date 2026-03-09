@@ -24,8 +24,7 @@ export function useGeneratedLists() {
         config_json: item.config_json as unknown as ListConfig,
       })) as GeneratedList[];
     },
-    enabled: !!user,
-  });
+      });
 }
 
 export function useGeneratedListItems(listId: string) {
@@ -51,8 +50,7 @@ export function useGeneratedListItems(listId: string) {
         building: calculateBuildingStatus(item.building as Building),
       })) as (GeneratedListItem & { building: BuildingWithStatus })[];
     },
-    enabled: !!user && !!listId,
-  });
+      });
 }
 
 interface GenerateListsParams {

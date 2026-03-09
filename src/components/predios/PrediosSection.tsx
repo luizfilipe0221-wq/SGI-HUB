@@ -4,6 +4,7 @@
  * Routes are nested under /predios/* - no extra Router needed.
  */
 import React from 'react';
+import './predios.css';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { AuthProvider } from '@/hooks/predios/useAuth';
 import { SgiLayout } from '@/components/layout/SgiLayout';

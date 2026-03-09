@@ -46,8 +46,7 @@ export function useBuildingFloors(buildingId: string) {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!user && !!buildingId,
-  });
+      });
 }
 
 // Fetch apartments for a building
@@ -69,8 +68,7 @@ export function useBuildingApartments(buildingId: string) {
         floor: apt.floor as BuildingFloor,
       }));
     },
-    enabled: !!user && !!buildingId,
-  });
+      });
 }
 
 // Get next unworked apartments
@@ -91,8 +89,7 @@ export function useNextApartments(buildingId: string, count: number = 5) {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!user && !!buildingId,
-  });
+      });
 }
 
 // Get last worked apartment
@@ -114,8 +111,7 @@ export function useLastWorkedApartment(buildingId: string) {
       if (error) throw error;
       return data;
     },
-    enabled: !!user && !!buildingId,
-  });
+      });
 }
 
 // Get apartment progress stats
@@ -137,8 +133,7 @@ export function useApartmentProgress(buildingId: string) {
 
       return { total, done, remaining: total - done };
     },
-    enabled: !!user && !!buildingId,
-  });
+      });
 }
 
 interface GenerateUnitsParams {

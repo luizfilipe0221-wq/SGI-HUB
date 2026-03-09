@@ -39,13 +39,13 @@ export function useBuildingSessionsDetailed(buildingId: string) {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       return (data || []).map(session => ({
         ...session,
         status: session.status as 'in_progress' | 'completed' | 'cancelled',
-        apartments: (session.apartments || []).map((apt: { 
-          id: string; 
-          apartment_id: string; 
+        apartments: (session.apartments || []).map((apt: {
+          id: string;
+          apartment_id: string;
           completed_at: string | null;
           apartment: {
             id: string;
@@ -62,14 +62,13 @@ export function useBuildingSessionsDetailed(buildingId: string) {
         list_item: session.list_item?.[0] || null,
       })) as SessionWithDetails[];
     },
-    enabled: !!user && !!buildingId,
   });
 }
 
 // Check if user can manage progress
 export function useCanManageProgress() {
   const { hasPermission, isAdmin } = usePermissions();
-  return isAdmin || hasPermission('manage_progress' as 'manage_progress');
+  return isAdmin || hasPermission('manage_progress' as const);
 }
 
 // Delete a session and revert all its markings
@@ -139,7 +138,7 @@ export function useDeleteSession() {
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       queryClient.invalidateQueries({ queryKey: ['buildings'] });
 
-      toast({ 
+      toast({
         title: 'Sessão excluída!',
         description: `${data.revertedCount} apartamento(s) foram revertidos.`,
       });
@@ -158,13 +157,13 @@ export function useUnmarkSessionApartment() {
   const { pushUndo } = useUndoActions();
 
   return useMutation({
-    mutationFn: async ({ 
-      sessionApartmentId, 
-      apartmentId, 
+    mutationFn: async ({
+      sessionApartmentId,
+      apartmentId,
       buildingId,
       sessionId,
-    }: { 
-      sessionApartmentId: string; 
+    }: {
+      sessionApartmentId: string;
       apartmentId: string;
       buildingId: string;
       sessionId: string;
@@ -207,7 +206,7 @@ export function useUnmarkSessionApartment() {
         const newCount = Math.max(0, session.completed_count - 1);
         await supabase
           .from('letter_sessions')
-          .update({ 
+          .update({
             completed_count: newCount,
             // If was completed, reopen it
             status: 'in_progress',
@@ -259,12 +258,12 @@ export function useRemoveApartmentFromSession() {
   const { log } = useAuditLog();
 
   return useMutation({
-    mutationFn: async ({ 
-      sessionApartmentId, 
+    mutationFn: async ({
+      sessionApartmentId,
       buildingId,
       sessionId,
-    }: { 
-      sessionApartmentId: string; 
+    }: {
+      sessionApartmentId: string;
       buildingId: string;
       sessionId: string;
     }) => {
@@ -295,7 +294,7 @@ export function useRemoveApartmentFromSession() {
       if (session) {
         await supabase
           .from('letter_sessions')
-          .update({ 
+          .update({
             planned_count: session.planned_count - 1,
             completed_count: wasCompleted ? session.completed_count - 1 : session.completed_count,
           })

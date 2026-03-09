@@ -87,13 +87,13 @@ function ManageUsersContent() {
 
       // Get user emails from auth (via profiles user_id)
       const userIds = profiles?.map(p => p.user_id) || [];
-      
+
       // Build user data
       const userData: UserData[] = profiles?.map(profile => {
         const userRole = roles?.find(r => r.user_id === profile.user_id);
         const userPermissions = userPerms
           ?.filter(up => up.user_id === profile.user_id)
-          .map((up: any) => up.permissions?.code)
+          .map((up: { user_id: string; permission_id: string; permissions: { code: string }[] }) => up.permissions?.[0]?.code)
           .filter(Boolean) || [];
 
         return {
@@ -229,7 +229,7 @@ function ManageUsersContent() {
 
   const handleSaveUser = async () => {
     if (!selectedUser) return;
-    
+
     setSaving(true);
     try {
       // Update role if changed

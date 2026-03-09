@@ -1,54 +1,45 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabasePredios as supabase } from '@/integrations/supabase/predios';
 import { Building, BuildingWithStatus, BuildingActivityLog } from '@/lib/predios/types';
-import { calculateBuildingStatus, ApartmentStats } from '@/lib/predios/building-utils';
+import { calculateBuildingStatus } from '@/lib/predios/building-utils';
+import { fetchApartmentStatsForBuildings } from '@/lib/predios/apartment-stats';
 import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
 
-/**
- * Fetch apartment stats for a list of buildings in a single query.
- */
-async function fetchApartmentStatsForBuildings(buildingIds: string[]): Promise<Map<string, ApartmentStats>> {
-  if (buildingIds.length === 0) return new Map();
-  
-  const { data, error } = await supabase
-    .from('building_apartments')
-    .select('building_id, letter_done, letter_done_at')
-    .in('building_id', buildingIds);
-  
-  if (error) throw error;
-  
-  const statsMap = new Map<string, ApartmentStats>();
-  
-  // Initialize all buildings with zero stats
-  buildingIds.forEach(id => {
-    statsMap.set(id, { total: 0, done: 0, lastDoneAt: null });
-  });
-  
-  // Aggregate apartment data
-  (data || []).forEach(apt => {
-    const current = statsMap.get(apt.building_id)!;
-    current.total++;
-    
-    if (apt.letter_done) {
-      current.done++;
-      
-      if (apt.letter_done_at) {
-        if (!current.lastDoneAt || apt.letter_done_at > current.lastDoneAt) {
-          current.lastDoneAt = apt.letter_done_at;
-        }
-      }
-    }
-  });
-  
-  return statsMap;
-}
+/** Query defaults for all buildings hooks — avoid excessive re-fetches */
+const QUERY_DEFAULTS = {
+  staleTime: 60_000,          // data is fresh for 1 minute
+  refetchOnWindowFocus: false, // don't re-fetch when user switches tabs
+} as const;
 
 export function useBuildings(territoryId?: number) {
+  const queryClient = useQueryClient();
   const { user } = useAuth();
+
+  // Real-time subscription: invalidate when buildings or apartments change
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('buildings-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'buildings' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['buildings'] });
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'building_apartments' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['buildings'] });
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, queryClient]);
 
   return useQuery({
     queryKey: ['buildings', territoryId],
+    enabled: !!user,
+    ...QUERY_DEFAULTS,
     queryFn: async (): Promise<BuildingWithStatus[]> => {
       let query = supabase
         .from('buildings')
@@ -64,15 +55,13 @@ export function useBuildings(territoryId?: number) {
 
       const buildingsList = (data || []) as Building[];
       const buildingIds = buildingsList.map(b => b.id);
-      
-      // Fetch apartment stats for all buildings
+
       const apartmentStats = await fetchApartmentStatsForBuildings(buildingIds);
 
-      return buildingsList.map(building => 
+      return buildingsList.map(building =>
         calculateBuildingStatus(building, apartmentStats.get(building.id))
       );
     },
-    enabled: !!user,
   });
 }
 
@@ -81,6 +70,8 @@ export function useBuilding(id: string) {
 
   return useQuery({
     queryKey: ['building', id],
+    enabled: !!user,
+    ...QUERY_DEFAULTS,
     queryFn: async (): Promise<BuildingWithStatus | null> => {
       const { data, error } = await supabase
         .from('buildings')
@@ -91,12 +82,9 @@ export function useBuilding(id: string) {
       if (error) throw error;
       if (!data) return null;
 
-      // Fetch apartment stats for this building
       const apartmentStats = await fetchApartmentStatsForBuildings([id]);
-
       return calculateBuildingStatus(data as Building, apartmentStats.get(id));
     },
-    enabled: !!user && !!id,
   });
 }
 
@@ -105,6 +93,8 @@ export function useBuildingActivities(buildingId: string) {
 
   return useQuery({
     queryKey: ['building-activities', buildingId],
+    enabled: !!user,
+    ...QUERY_DEFAULTS,
     queryFn: async (): Promise<BuildingActivityLog[]> => {
       const { data, error } = await supabase
         .from('building_activity_log')
@@ -116,7 +106,6 @@ export function useBuildingActivities(buildingId: string) {
       if (error) throw error;
       return (data || []) as BuildingActivityLog[];
     },
-    enabled: !!user && !!buildingId,
   });
 }
 
@@ -210,7 +199,6 @@ export function useMarkAsWorked() {
     mutationFn: async ({ buildingId, lettersCount }: { buildingId: string; lettersCount: number }) => {
       const today = new Date().toISOString().split('T')[0];
 
-      // Update building
       const { error: updateError } = await supabase
         .from('buildings')
         .update({
@@ -221,7 +209,6 @@ export function useMarkAsWorked() {
 
       if (updateError) throw updateError;
 
-      // Log activity
       const { error: logError } = await supabase
         .from('building_activity_log')
         .insert({
@@ -251,13 +238,13 @@ export function useUpdateProgress() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ 
-      buildingId, 
-      floorsDone, 
-      apartmentsDone 
-    }: { 
-      buildingId: string; 
-      floorsDone: number; 
+    mutationFn: async ({
+      buildingId,
+      floorsDone,
+      apartmentsDone,
+    }: {
+      buildingId: string;
+      floorsDone: number;
       apartmentsDone: number;
     }) => {
       const { error: updateError } = await supabase
@@ -270,7 +257,6 @@ export function useUpdateProgress() {
 
       if (updateError) throw updateError;
 
-      // Log activity
       const { error: logError } = await supabase
         .from('building_activity_log')
         .insert({

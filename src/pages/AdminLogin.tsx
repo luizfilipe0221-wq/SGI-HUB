@@ -21,8 +21,8 @@ export default function AdminLogin() {
     try {
       await loginAdmin(email, senha);
       navigate("/admin/dashboard");
-    } catch (err: any) {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Erro", description: err instanceof Error ? err.message : "Erro ao entrar", variant: "destructive" });
     } finally {
       setLoading(false);
     }

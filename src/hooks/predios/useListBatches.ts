@@ -90,8 +90,7 @@ export function useListBatches() {
 
       return result;
     },
-    enabled: !!user,
-  });
+      });
 }
 
 export function useCreateListBatch() {

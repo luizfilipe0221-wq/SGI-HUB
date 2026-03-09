@@ -32,7 +32,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 
-const STATUS_CONFIG: Record<string, { label: string; icon: React.ComponentType<any>; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+const STATUS_CONFIG: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   uploaded: { label: 'Enviado', icon: Clock, variant: 'secondary' },
   processing: { label: 'Processando', icon: Loader2, variant: 'outline' },
   completed: { label: 'Concluído', icon: CheckCircle2, variant: 'default' },
@@ -93,9 +93,8 @@ function UploadsContent() {
         <CardContent className="pt-6">
           <div
             {...getRootProps()}
-            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-              isDragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50'
-            } ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${isDragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50'
+              } ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <input {...getInputProps()} />
             <div className="flex flex-col items-center gap-4">

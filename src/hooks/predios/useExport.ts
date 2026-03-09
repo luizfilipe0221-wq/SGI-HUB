@@ -39,7 +39,8 @@ export function useExport() {
       }
 
       // Format data
-      const rows = buildings.map((b: any) => ({
+      type BuildingRow = typeof buildings[number] & { territories?: { name?: string } };
+      const rows = (buildings as BuildingRow[]).map((b) => ({
         'Território': b.territories?.name || `Território ${b.territory_id}`,
         'Nome': b.name,
         'Endereço': b.address,
@@ -60,7 +61,7 @@ export function useExport() {
         const headers = Object.keys(rows[0]);
         const csvContent = [
           headers.join(';'),
-          ...rows.map(row => headers.map(h => `"${(row as any)[h] || ''}"`).join(';'))
+          ...rows.map(row => headers.map(h => `"${(row as Record<string, unknown>)[h] || ''}"`).join(';'))
         ].join('\n');
 
         // Download
@@ -77,7 +78,7 @@ export function useExport() {
         const headers = Object.keys(rows[0]);
         const csvContent = [
           headers.join('\t'),
-          ...rows.map(row => headers.map(h => (row as any)[h] || '').join('\t'))
+          ...rows.map(row => headers.map(h => (row as Record<string, unknown>)[h] || '').join('\t'))
         ].join('\n');
 
         const blob = new Blob(['\ufeff' + csvContent], { type: 'application/vnd.ms-excel' });

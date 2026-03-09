@@ -59,7 +59,7 @@ export function useAutoListGeneration() {
       });
 
       // Calculate building statuses
-      const buildings = (buildingsData || []).map(b => 
+      const buildings = (buildingsData || []).map(b =>
         calculateBuildingStatus(b as Building, statsMap[b.id])
       );
 
@@ -68,12 +68,12 @@ export function useAutoListGeneration() {
 
       // Filter by included/excluded territories
       if (config.included_territories?.length) {
-        availableBuildings = availableBuildings.filter(b => 
+        availableBuildings = availableBuildings.filter(b =>
           config.included_territories!.includes(b.territory_id)
         );
       }
       if (config.excluded_territories?.length) {
-        availableBuildings = availableBuildings.filter(b => 
+        availableBuildings = availableBuildings.filter(b =>
           !config.excluded_territories!.includes(b.territory_id)
         );
       }
@@ -88,7 +88,7 @@ export function useAutoListGeneration() {
       }
 
       // Only include buildings with pending apartments
-      availableBuildings = availableBuildings.filter(b => 
+      availableBuildings = availableBuildings.filter(b =>
         b.status !== 'completed' && b.done_apartments < b.total_apartments
       );
 
@@ -107,7 +107,7 @@ export function useAutoListGeneration() {
             return new Date(a.last_worked_at).getTime() - new Date(b.last_worked_at).getTime();
           });
           break;
-        case 'balanced':
+        case 'balanced': {
           // Group by territory, then round-robin
           const byTerritory: Record<number, BuildingWithStatus[]> = {};
           availableBuildings.forEach(b => {
@@ -121,7 +121,7 @@ export function useAutoListGeneration() {
           // Round-robin selection
           const balanced: BuildingWithStatus[] = [];
           const territoryIds = Object.keys(byTerritory).map(Number);
-          let maxLen = Math.max(...territoryIds.map(t => byTerritory[t].length));
+          const maxLen = Math.max(...territoryIds.map(t => byTerritory[t].length));
           for (let i = 0; i < maxLen; i++) {
             for (const tid of territoryIds) {
               if (byTerritory[tid][i]) {
@@ -131,6 +131,7 @@ export function useAutoListGeneration() {
           }
           availableBuildings = balanced;
           break;
+        }
         case 'all':
         default:
           // Combine: expired first, then least recent, balanced by territory
@@ -146,11 +147,11 @@ export function useAutoListGeneration() {
 
       for (let listNum = 1; listNum <= config.lists_count; listNum++) {
         const listBuildings: BuildingWithStatus[] = [];
-        
+
         for (let i = 0; i < config.buildings_per_list; i++) {
           // Find next available building not yet used
           const next = availableBuildings.find(b => !usedBuildingIds.has(b.id));
-          
+
           if (next) {
             usedBuildingIds.add(next.id);
             listBuildings.push(next);
@@ -256,15 +257,15 @@ export function useAutoListGeneration() {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['generated-lists'] });
       queryClient.invalidateQueries({ queryKey: ['list-batches'] });
-      
+
       if (result.warnings.length > 0) {
-        toast({ 
+        toast({
           title: 'Listas geradas com avisos!',
           description: `${result.items.length} prédios em ${result.lists?.length || 0} listas. ${result.warnings.length} aviso(s).`,
           variant: 'default',
         });
       } else {
-        toast({ 
+        toast({
           title: 'Listas geradas com sucesso!',
           description: `${result.items.length} prédios em ${result.lists?.length || 0} listas.`,
         });

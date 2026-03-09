@@ -38,8 +38,7 @@ export function useListItem(listItemId: string | undefined) {
         completed_letters_count: data.completed_letters_count ?? 0,
       } as ListItemWithProgress;
     },
-    enabled: !!user && !!listItemId,
-    // Refetch more frequently to keep data fresh
+        // Refetch more frequently to keep data fresh
     staleTime: 5000,
     refetchOnMount: 'always',
   });
@@ -70,8 +69,7 @@ export function useListItemsWithProgress(listId: string) {
         completed_letters_count: item.completed_letters_count ?? 0,
       })) as ListItemWithProgress[];
     },
-    enabled: !!user && !!listId,
-    // Refetch more frequently
+        // Refetch more frequently
     staleTime: 5000,
     refetchOnMount: 'always',
   });

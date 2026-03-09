@@ -54,8 +54,7 @@ export function useBuildingLetterSessions(buildingId: string) {
       if (error) throw error;
       return (data || []) as LetterSession[];
     },
-    enabled: !!user && !!buildingId,
-  });
+      });
 }
 
 // Get active session (in_progress)
@@ -85,8 +84,7 @@ export function useActiveLetterSession(buildingId: string) {
       if (error) throw error;
       return data as SessionWithApartments | null;
     },
-    enabled: !!user && !!buildingId,
-  });
+      });
 }
 
 interface CreateSessionParams {

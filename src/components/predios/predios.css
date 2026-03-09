@@ -1,0 +1,78 @@
+/**
+ * predios.css — Estilos exclusivos do módulo Gestão de Prédios.
+ * Importado apenas em PrediosSection.tsx, garantindo isolamento total.
+ *
+ * As variáveis CSS são escopadas em `.predios-module` para não
+ * vazar para o restante do app (sidebar do SGI principal etc.).
+ */
+
+/* ── Variáveis escopadas ao módulo ── */
+.predios-module {
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 47% 15%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 222 47% 18%;
+    --sidebar-ring: 217 91% 60%;
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --expired: 0 84% 60%;
+    --expired-foreground: 0 0% 100%;
+}
+
+/* ── Itens de sidebar ── */
+.predios-module .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.5rem;
+    color: hsl(var(--sidebar-foreground) / 0.7);
+    transition: color 0.15s, background-color 0.15s;
+}
+
+.predios-module .sidebar-item:hover {
+    color: hsl(var(--sidebar-foreground));
+    background-color: hsl(var(--sidebar-accent));
+}
+
+.predios-module .sidebar-item-active {
+    background-color: hsl(var(--sidebar-accent));
+    color: hsl(var(--sidebar-foreground));
+    font-weight: 500;
+}
+
+/* ── Status badges dos prédios ── */
+.predios-module .status-expired {
+    background-color: hsl(var(--destructive) / 0.1);
+    color: hsl(var(--destructive));
+    border-color: hsl(var(--destructive) / 0.2);
+}
+
+.predios-module .status-warning {
+    background-color: hsl(48 100% 50% / 0.1);
+    color: hsl(38 80% 35%);
+    border-color: hsl(48 100% 50% / 0.2);
+}
+
+.predios-module .status-success {
+    background-color: hsl(142 71% 45% / 0.1);
+    color: hsl(142 60% 28%);
+    border-color: hsl(142 71% 45% / 0.2);
+}
+
+.predios-module .status-completed {
+    background-color: hsl(var(--primary) / 0.1);
+    color: hsl(var(--primary));
+    border-color: hsl(var(--primary) / 0.2);
+}
+
+.predios-module .status-not-started {
+    background-color: hsl(var(--muted));
+    color: hsl(var(--muted-foreground));
+    border-color: hsl(var(--border));
+}

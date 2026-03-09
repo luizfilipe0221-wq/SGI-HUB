@@ -1,12 +1,11 @@
 /**
  * useAuth — Módulo Gestão de Prédios
- * Lê a sessão real do administrador salva em localStorage pelo sistema SGI.
- * Em vez de um usuário stub falso, usa os dados reais de quem está logado.
- * Nenhum Supabase Auth é necessário — o SGI já gerencia autenticação.
+ * Usa o mesmo client Supabase do banco principal.
+ * O módulo acessa dados via anon key + RLS, sem necessidade de login separado.
  */
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
-import { getAdminSession } from '@/lib/auth';
+import { supabasePredios } from '@/integrations/supabase/predios';
 
 interface AuthContextType {
     user: User | null;
@@ -15,27 +14,6 @@ interface AuthContextType {
     signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
     signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
     signOut: () => Promise<void>;
-}
-
-function buildUserFromAdminSession(): User | null {
-    const admin = getAdminSession();
-    if (!admin) return null;
-
-    // Monta um objeto User compatível com o tipo do Supabase,
-    // usando os dados reais do administrador logado no SGI.
-    return {
-        id: String(admin.id),
-        app_metadata: { provider: 'sgi', providers: ['sgi'] },
-        user_metadata: { name: admin.nome },
-        aud: 'authenticated',
-        created_at: new Date().toISOString(),
-        email: admin.email,
-        role: 'authenticated',
-        updated_at: new Date().toISOString(),
-        identities: [],
-        factors: [],
-        confirmed_at: new Date().toISOString(),
-    } as User;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -49,26 +27,33 @@ const AuthContext = createContext<AuthContextType>({
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
+    const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Lê a sessão real do SGI ao montar
-        const u = buildUserFromAdminSession();
-        setUser(u);
-        setLoading(false);
+        // Verificar sessão existente
+        supabasePredios.auth.getSession().then(({ data: { session: existing } }) => {
+            setSession(existing);
+            setUser(existing?.user ?? null);
+            setLoading(false);
+        });
+
+        // Ouvir mudanças de auth
+        const { data: { subscription } } = supabasePredios.auth.onAuthStateChange((_event, s) => {
+            setSession(s);
+            setUser(s?.user ?? null);
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     return (
-        <AuthContext.Provider
-            value={{
-                user,
-                session: null,
-                loading,
-                signUp: async () => ({ error: null }),
-                signIn: async () => ({ error: null }),
-                signOut: async () => { },
-            }}
-        >
+        <AuthContext.Provider value={{
+            user, session, loading,
+            signUp: async () => ({ error: null }),
+            signIn: async () => ({ error: null }),
+            signOut: async () => { await supabasePredios.auth.signOut(); },
+        }}>
             {children}
         </AuthContext.Provider>
     );

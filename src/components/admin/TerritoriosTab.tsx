@@ -43,8 +43,10 @@ export function TerritoriosTab() {
   const loadData = useCallback(async () => {
     setLoading(true);
     const { data: rows } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .from("relatorio_territorio" as any)
       .select("*");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setData((rows || []).map((r: any) => ({
       territorio: r.territorio,
       total_contatos: Number(r.total_contatos) || 0,

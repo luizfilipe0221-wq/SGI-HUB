@@ -42,13 +42,13 @@ export function useListGeneration() {
 
       if (buildingsError) throw buildingsError;
 
-      const buildings = (buildingsData || []).map(b => 
+      const buildings = (buildingsData || []).map(b =>
         calculateBuildingStatus(b as Building)
       );
 
       // Filter out recently worked buildings if avoid_recent_days > 0
       const cutoffDate = subDays(new Date(), config.avoid_recent_days);
-      let availableBuildings = buildings.filter(b => {
+      const availableBuildings = buildings.filter(b => {
         if (!b.last_worked_at) return true;
         return parseISO(b.last_worked_at) < cutoffDate;
       });
@@ -85,7 +85,7 @@ export function useListGeneration() {
       for (let listNum = 1; listNum <= config.lists_count; listNum++) {
         const patternString = patterns[listNum - 1] || patterns[0] || '';
         const pattern = parsePattern(patternString);
-        
+
         if (pattern.length === 0) continue;
 
         let position = 1;
@@ -114,11 +114,11 @@ export function useListGeneration() {
             fallbackWarnings.push(
               `Lista ${listNum}: Território ${territoryId} precisa de ${countNeeded} prédios, mas só tem ${selected.length} disponíveis. Faltam ${shortage}.`
             );
-            
+
             // Try to find fallback from other territories
             const allOtherAvailable = Object.entries(buildingsByTerritory)
               .filter(([tid]) => Number(tid) !== territoryId)
-              .flatMap(([tid, buildings]) => 
+              .flatMap(([tid, buildings]) =>
                 buildings
                   .filter(b => !usedBuildingIds.has(b.id))
                   .map(b => ({ ...b, fallbackFromTerritory: Number(tid) }))
@@ -197,7 +197,7 @@ export function useListGeneration() {
         ...config,
         patterns_per_list: patternsConfig,
       };
-      
+
       const { data: listData, error: listError } = await supabase
         .from('generated_lists')
         .insert([{
@@ -246,8 +246,8 @@ export function useListGeneration() {
         },
       });
 
-      return { 
-        list: listData, 
+      return {
+        list: listData,
         items: generatedItems,
         warnings: fallbackWarnings,
       };
@@ -256,7 +256,7 @@ export function useListGeneration() {
       queryClient.invalidateQueries({ queryKey: ['generated-lists'] });
       queryClient.invalidateQueries({ queryKey: ['list-batches'] });
       if (result.warnings.length > 0) {
-        toast({ 
+        toast({
           title: 'Listas geradas com avisos!',
           description: `${result.items.length} prédios em ${result.list.name}. ${result.warnings.length} aviso(s) de fallback.`,
           variant: 'default',

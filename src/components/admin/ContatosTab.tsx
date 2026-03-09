@@ -203,7 +203,7 @@ export function ContatosTab({ initialStatusFilter }: ContatosTabProps) {
   }
 
   function parsePhones(telefone: string): string[] {
-    return telefone.split(/[|\/,]/).map((t) => t.trim()).filter(Boolean);
+    return telefone.split(/[|/,]/).map((t) => t.trim()).filter(Boolean);
   }
 
   if (loading) return <div className="space-y-4"><Skeleton className="h-10 w-full" /><Skeleton className="h-64 w-full" /></div>;

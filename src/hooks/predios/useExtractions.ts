@@ -69,7 +69,6 @@ export function useExtractions() {
       if (error) throw error;
       return data as Extraction[];
     },
-    enabled: !!user,
   });
 
   const uploadMutation = useMutation({
@@ -145,7 +144,7 @@ export function useExtractions() {
     mutationFn: async (extraction: Extraction) => {
       // Delete from storage
       await supabase.storage.from('uploads').remove([extraction.storage_path]);
-      
+
       // Delete extraction (cascades to extracted_buildings)
       const { error } = await supabase
         .from('extractions')
@@ -195,14 +194,13 @@ export function useExtractedBuildings(extractionId: string | undefined) {
       if (error) throw error;
       return data as ExtractedBuilding[];
     },
-    enabled: !!extractionId && !!user,
   });
 
   const updateBuildingMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Record<string, unknown> }) => {
       const { error } = await supabase
         .from('extracted_buildings')
-        .update(updates as any)
+        .update(updates as Record<string, unknown>)
         .eq('id', id);
 
       if (error) throw error;

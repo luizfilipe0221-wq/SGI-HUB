@@ -31,7 +31,7 @@ export function AppLayout() {
   const isHome = !pageTitle;
 
   return (
-    <div className="min-h-[calc(100vh-160px)]">
+    <div className="predios-module min-h-[calc(100vh-160px)]">
       {/* Sub-header with back button (shown on inner pages) */}
       {!isHome && (
         <div className="flex items-center gap-3 px-6 pt-4 pb-2">

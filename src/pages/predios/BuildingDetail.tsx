@@ -39,17 +39,17 @@ export default function BuildingDetail() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  
+
   // List execution mode params
   const listId = searchParams.get('list');
   const listItemId = searchParams.get('item');
   const isListExecutionMode = !!(listId && listItemId);
-  
+
   const { data: building, isLoading } = useBuilding(id!);
   const { data: activities } = useBuildingActivities(id!);
   const { data: listItem } = useListItem(listItemId || undefined);
   const listNavigation = useListItemNavigation(listId || '', listItemId || undefined);
-  
+
   const updateBuilding = useUpdateBuilding();
   const markAsWorked = useMarkAsWorked();
   const updateProgress = useUpdateProgress();
@@ -61,7 +61,7 @@ export default function BuildingDetail() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [lettersCount, setLettersCount] = useState(5);
-  const [editData, setEditData] = useState<any>(null);
+  const [editData, setEditData] = useState<Record<string, string | number | null>>({}); // null means cleared
   const [progressData, setProgressData] = useState({ floors: 0, apartments: 0 });
   const [customFieldsData, setCustomFieldsData] = useState<Record<string, string | null>>({});
 
@@ -134,9 +134,9 @@ export default function BuildingDetail() {
     // Detect changes and record them
     const changes: Array<{ fieldName: string; oldValue: string | null; newValue: string | null }> = [];
     const fieldsToCheck = ['name', 'address', 'territory_id', 'floors_count', 'apartments_per_floor', 'apartments_total', 'default_cycle_days', 'custom_cycle_days', 'notes'];
-    
+
     fieldsToCheck.forEach(field => {
-      const oldVal = (building as any)[field];
+      const oldVal = (building as unknown as Record<string, unknown>)[field];
       const newVal = editData[field];
       if (String(oldVal ?? '') !== String(newVal ?? '')) {
         changes.push({
@@ -186,9 +186,9 @@ export default function BuildingDetail() {
     <div className="max-w-3xl mx-auto space-y-6">
       {/* List Execution Banner */}
       {isListExecutionMode && listId && listItemId && (
-        <ListExecutionBanner 
-          listId={listId} 
-          listItemId={listItemId} 
+        <ListExecutionBanner
+          listId={listId}
+          listItemId={listItemId}
           buildingId={building.id}
           onNavigate={handleListNavigation}
         />
@@ -196,9 +196,9 @@ export default function BuildingDetail() {
 
       {/* Header */}
       <div className="flex items-start gap-4">
-        <Button 
-          variant="ghost" 
-          size="icon" 
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => isListExecutionMode ? navigate(`/lists/${listId}`) : navigate(-1)}
         >
           <ArrowLeft className="w-5 h-5" />
@@ -322,8 +322,8 @@ export default function BuildingDetail() {
         </div>
 
         <TabsContent value="apartments" className="space-y-4">
-          <ApartmentsTab 
-            buildingId={building.id} 
+          <ApartmentsTab
+            buildingId={building.id}
             unitsGenerated={unitsGenerated}
             listItemId={listItemId || undefined}
             listId={listId || undefined}
@@ -356,7 +356,7 @@ export default function BuildingDetail() {
               <div>
                 <span className="text-muted-foreground">Última Carta</span>
                 <p className="font-medium">
-                  {building.last_letter_sent_at 
+                  {building.last_letter_sent_at
                     ? format(new Date(building.last_letter_sent_at), "dd/MM/yyyy", { locale: ptBR })
                     : 'Nunca'}
                 </p>
@@ -364,7 +364,7 @@ export default function BuildingDetail() {
               <div>
                 <span className="text-muted-foreground">Vencimento</span>
                 <p className="font-medium">
-                  {building.due_date 
+                  {building.due_date
                     ? format(building.due_date, "dd/MM/yyyy", { locale: ptBR })
                     : 'Concluído'}
                 </p>
@@ -408,8 +408,8 @@ export default function BuildingDetail() {
 
             <Dialog>
               <DialogTrigger asChild>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full"
                   onClick={() => setProgressData({
                     floors: building.progress_floors_done,
@@ -598,7 +598,7 @@ export default function BuildingDetail() {
                   rows={3}
                 />
               </div>
-              
+
               {/* Custom Fields */}
               {customFields && customFields.length > 0 && (
                 <CustomFieldsRenderer

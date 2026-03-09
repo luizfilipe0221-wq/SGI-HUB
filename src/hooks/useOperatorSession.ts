@@ -217,7 +217,7 @@ export function useOperatorSession(token: string | undefined): OperatorSessionSt
 
         setCompleted(newCompleted);
         setCompletedStatuses(newStatuses);
-        try { navigator.vibrate?.(50); } catch { }
+        try { navigator.vibrate?.(50); } catch (_) { /* vibration API optional */ }
         toast({ title: "Registrado com sucesso!" });
         setSaving(false);
 
@@ -232,7 +232,7 @@ export function useOperatorSession(token: string | undefined): OperatorSessionSt
     }, [status, contatos, currentIdx, observacao, horarioRetorno, completed, completedStatuses]);
 
     const parsePhones = useCallback(
-        (telefone: string) => telefone.split(/[|\/,]/).map((t) => t.trim()).filter(Boolean),
+        (telefone: string) => telefone.split(/[|/,]/).map((t) => t.trim()).filter(Boolean),
         []
     );
 

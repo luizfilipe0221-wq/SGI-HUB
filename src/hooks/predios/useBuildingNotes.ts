@@ -32,8 +32,7 @@ export function useCurrentBuildingNote(buildingId: string) {
       if (error) throw error;
       return data;
     },
-    enabled: !!user && !!buildingId,
-  });
+      });
 }
 
 // Fetch note history for a building
@@ -52,8 +51,7 @@ export function useBuildingNotesHistory(buildingId: string) {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!user && !!buildingId,
-  });
+      });
 }
 
 // Save/update building note

@@ -43,9 +43,9 @@ function ReviewExtractionContent() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { buildings, isLoading, updateBuilding, approveBuilding, rejectBuilding, importBuildings, importing } = useExtractedBuildings(id);
-  
+
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [editingBuilding, setEditingBuilding] = useState<any>(null);
+  const [editingBuilding, setEditingBuilding] = useState<import('@/hooks/predios/useExtractions').ExtractedBuilding | null>(null);
   const [editForm, setEditForm] = useState<Record<string, string>>({});
 
   // Fetch extraction details
@@ -109,7 +109,7 @@ function ReviewExtractionContent() {
     navigate('/buildings');
   };
 
-  const handleEdit = (building: any) => {
+  const handleEdit = (building: import('@/hooks/predios/useExtractions').ExtractedBuilding) => {
     setEditingBuilding(building);
     setEditForm({
       name: building.name || '',
@@ -127,7 +127,7 @@ function ReviewExtractionContent() {
 
   const handleSaveEdit = async () => {
     if (!editingBuilding) return;
-    
+
     await updateBuilding({
       id: editingBuilding.id,
       updates: {
@@ -135,7 +135,7 @@ function ReviewExtractionContent() {
         units_total: editForm.units_total ? parseInt(editForm.units_total) : null,
       },
     });
-    
+
     toast({ title: 'Sucesso', description: 'Registro atualizado' });
     setEditingBuilding(null);
   };
@@ -293,15 +293,15 @@ function ReviewExtractionContent() {
                     <Badge
                       variant={
                         building.status === 'approved' ? 'default' :
-                        building.status === 'rejected' ? 'destructive' :
-                        building.status === 'imported' ? 'secondary' :
-                        'outline'
+                          building.status === 'rejected' ? 'destructive' :
+                            building.status === 'imported' ? 'secondary' :
+                              'outline'
                       }
                     >
                       {building.status === 'pending' ? 'Pendente' :
-                       building.status === 'approved' ? 'Aprovado' :
-                       building.status === 'rejected' ? 'Rejeitado' :
-                       'Importado'}
+                        building.status === 'approved' ? 'Aprovado' :
+                          building.status === 'rejected' ? 'Rejeitado' :
+                            'Importado'}
                     </Badge>
                   </TableCell>
                   <TableCell>

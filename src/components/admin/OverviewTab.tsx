@@ -126,7 +126,7 @@ export function OverviewTab({ onNavigateTab }: OverviewTabProps) {
     const { data: estData } = await supabase.from("estatisticas_lista").select("*");
     const aggCounts: Record<string, number> = { atendeu: 0, "nao-atendeu": 0, "caixa-postal": 0, invalido: 0, "nao-quer": 0, retornar: 0, pendente: 0 };
 
-    (estData || []).forEach((e: any) => {
+    (estData || []).forEach((e: Record<string, unknown>) => {
       aggCounts.atendeu += Number(e.atendeu) || 0;
       aggCounts["nao-atendeu"] += Number(e.nao_atendeu) || 0;
       aggCounts["caixa-postal"] += Number(e.caixa_postal) || 0;
@@ -162,7 +162,7 @@ export function OverviewTab({ onNavigateTab }: OverviewTabProps) {
     const activeListas = allListas.filter((l) => l.ativa);
     const lpData: ListaProgress[] = [];
     for (const lista of activeListas) {
-      const est = (estData || []).find((e: any) => e.lista_id === lista.id);
+      const est = (estData || []).find((e: Record<string, unknown>) => e.lista_id === lista.id);
       if (est) {
         const total = Number(est.total_contatos) || 0;
         const done = total - (Number(est.pendentes) || 0);
@@ -276,7 +276,7 @@ export function OverviewTab({ onNavigateTab }: OverviewTabProps) {
                   </Pie>
                   <Tooltip contentStyle={tooltipStyle} />
                   <Legend
-                    formatter={(value, entry: any) => {
+                    formatter={(value, _entry) => {
                       const item = statusCounts.find((s) => s.name === value);
                       const pct = totalWorked > 0 && item ? Math.round((item.value / totalWorked) * 100) : 0;
                       return <span className="text-[11px] text-foreground">{value}: {item?.value || 0} ({pct}%)</span>;
