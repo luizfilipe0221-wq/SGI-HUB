@@ -32,7 +32,7 @@ export function CreateListTab() {
   // Auto mode filters
   const [territorio, setTerritorio] = useState("all");
   const [tipo, setTipo] = useState("");
-  const [quantidade, setQuantidade] = useState(50);
+  const [quantidade, setQuantidade] = useState<number | string>(50);
   const [semLigacao, setSemLigacao] = useState(true);
   const [autoPreview, setAutoPreview] = useState<Contato[]>([]);
   const [previewing, setPreviewing] = useState(false);
@@ -102,7 +102,7 @@ export function CreateListTab() {
       }
     }
 
-    setAutoPreview(filtered.slice(0, quantidade));
+    setAutoPreview(filtered.slice(0, Number(quantidade) || 0));
     setPreviewing(false);
   }
 
@@ -238,9 +238,11 @@ export function CreateListTab() {
       setLinks(generatedLinks);
       setShowModal(true);
       toast({ title: "Sucesso!", description: "Lista criada e links gerados." });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erro ao criar lista.";
-      toast({ title: "Erro", description: msg, variant: "destructive" });
+    } catch (err: any) {
+      console.error("DEBUG SUPERBASE ERROR:", err);
+      // Se for um err custom supabase, vai ter message e details
+      const msg = err?.message || err?.details || JSON.stringify(err) || "Erro ao criar lista.";
+      toast({ title: "Erro Detalhado", description: msg, variant: "destructive", duration: 7000 });
     } finally {
       setLoading(false);
     }
@@ -391,7 +393,7 @@ export function CreateListTab() {
                 </div>
                 <div className="space-y-2">
                   <Label>Quantidade</Label>
-                  <Input type="number" value={quantidade} onChange={(e) => setQuantidade(Number(e.target.value))} min={1} max={500} />
+                  <Input type="number" value={quantidade} onChange={(e) => setQuantidade(e.target.value === "" ? "" : Number(e.target.value))} min={1} max={500} />
                 </div>
               </div>
               <div className="flex items-center gap-2">
