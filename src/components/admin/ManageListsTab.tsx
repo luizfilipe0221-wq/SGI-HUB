@@ -28,6 +28,7 @@ interface Operador {
   link_ativo: boolean;
   total: number;
   registrados: number;
+  primeiro_telefone: string;
 }
 
 interface ListaStats {
@@ -57,7 +58,14 @@ export function ManageListsTab() {
     if (listasData && listasData.length > 0) {
       const { data: lcData } = await supabase
         .from("lista_contatos")
-        .select("id, lista_id, nome_operador, token_operador, link_ativo");
+        .select("id, lista_id, nome_operador, token_operador, link_ativo, contato_id");
+
+      // Buscar telefones dos contatos
+      const contatoIds = [...new Set((lcData || []).map((lc) => lc.contato_id))];
+      const { data: contatosData } = contatoIds.length > 0
+        ? await supabase.from("contatos").select("id, telefone").in("id", contatoIds)
+        : { data: [] };
+      const telefoneMap = new Map((contatosData || []).map((c) => [c.id, c.telefone]));
 
       const { data: regData } = await supabase.from("registros").select("lista_contato_id");
       const regSet = new Set((regData || []).map((r) => r.lista_contato_id));
@@ -81,6 +89,9 @@ export function ManageListsTab() {
           if (!hasReg) s.pendentes++;
         }
 
+        const telefone = telefoneMap.get(lc.contato_id) || "";
+        const primeiraTel = telefone.split(/[|/,]/)[0]?.trim() || "";
+
         const existing = map.get(lc.token_operador);
         if (existing) {
           existing.total++;
@@ -92,6 +103,7 @@ export function ManageListsTab() {
             link_ativo: lc.link_ativo ?? true,
             total: 1,
             registrados: hasReg ? 1 : 0,
+            primeiro_telefone: primeiraTel,
           });
         }
       });
@@ -169,16 +181,19 @@ export function ManageListsTab() {
 
   async function confirmarDelete() {
     if (!deleteLista) return;
-    const { data: lcData } = await supabase.from("lista_contatos").select("id").eq("lista_id", deleteLista.id);
+    const id = deleteLista.id;
+    // Atualizar estado local IMEDIATAMENTE para UI responsiva
+    setListas((prev) => prev.filter((l) => l.id !== id));
+    setDeleteLista(null);
+    toast({ title: "Lista excluída!" });
+    // Depois faz a deleção no banco em background
+    const { data: lcData } = await supabase.from("lista_contatos").select("id").eq("lista_id", id);
     if (lcData && lcData.length > 0) {
       const lcIds = lcData.map((lc) => lc.id);
       await supabase.from("registros").delete().in("lista_contato_id", lcIds);
-      await supabase.from("lista_contatos").delete().eq("lista_id", deleteLista.id);
+      await supabase.from("lista_contatos").delete().eq("lista_id", id);
     }
-    await supabase.from("listas").delete().eq("id", deleteLista.id);
-    toast({ title: "Lista excluída!" });
-    setDeleteLista(null);
-    loadData();
+    await supabase.from("listas").delete().eq("id", id);
   }
 
   if (loading) {
@@ -272,7 +287,12 @@ export function ManageListsTab() {
                     const opPct = op.total > 0 ? Math.round((op.registrados / op.total) * 100) : 0;
                     return (
                       <div key={op.token_operador} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30 flex-wrap">
-                        <span className="font-medium flex-1 min-w-[100px]">{op.nome_operador || "Sem nome"}</span>
+                        <div className="flex-1 min-w-[120px]">
+                          <p className="font-medium text-sm">{op.nome_operador || "Sem nome"}</p>
+                          {op.primeiro_telefone && (
+                            <p className="text-xs text-muted-foreground">{op.primeiro_telefone}</p>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2">
                           <Progress value={opPct} className="h-2 w-16" />
                           <span className="text-xs text-muted-foreground">{op.registrados}/{op.total}</span>

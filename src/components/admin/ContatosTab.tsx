@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { Phone, Search, Loader2, Save, ChevronLeft, ChevronRight } from "lucide-react";
+import { Phone, Search, Loader2, Save, ChevronLeft, ChevronRight, Pencil, Check, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const statusBadgeClass: Record<string, string> = {
@@ -54,6 +54,7 @@ interface HistoricoItem {
   status: string | null;
   observacao: string | null;
   horario_retorno: string | null;
+  lista_contato_id: number | null;
 }
 
 interface ContatosTabProps {
@@ -82,6 +83,9 @@ export function ContatosTab({ initialStatusFilter }: ContatosTabProps) {
   const [saving, setSaving] = useState(false);
   const [historico, setHistorico] = useState<HistoricoItem[]>([]);
   const [loadingHistorico, setLoadingHistorico] = useState(false);
+  const [editingHistIdx, setEditingHistIdx] = useState<number | null>(null);
+  const [editingHistStatus, setEditingHistStatus] = useState("");
+  const [savingHist, setSavingHist] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -167,15 +171,45 @@ export function ContatosTab({ initialStatusFilter }: ContatosTabProps) {
 
   async function loadHistorico(contatoId: number) {
     setLoadingHistorico(true);
-    const { data } = await supabase
-      .from("historico_contato")
-      .select("*")
-      .eq("contato_id", contatoId);
+    // Também buscamos lista_contato_id via painel_resultados para poder editar
+    const [{ data: histData }, { data: painelData }] = await Promise.all([
+      supabase.from("historico_contato").select("*").eq("contato_id", contatoId),
+      supabase.from("painel_resultados").select("lista_contato_id, lista_id").eq("contato_id", contatoId),
+    ]);
+    const lcIdSet = new Set((painelData || []).map((p) => p.lista_contato_id));
+    // Para cada item de histórico, tentamos associar um lista_contato_id (melhor esforço)
+    const lcIdArr = [...lcIdSet].filter(Boolean) as number[];
     setHistorico(
-      (data || [])
+      (histData || [])
         .sort((a, b) => new Date(b.data_ligacao || 0).getTime() - new Date(a.data_ligacao || 0).getTime())
+        .map((h, idx) => ({
+          ...h,
+          lista_contato_id: lcIdArr[idx] ?? lcIdArr[0] ?? null,
+        }))
     );
     setLoadingHistorico(false);
+  }
+
+  async function salvarEdicaoHistorico(item: HistoricoItem, novoStatus: string) {
+    if (!item.lista_contato_id) {
+      toast({ title: "Não foi possível editar", description: "ID do contato na lista não encontrado.", variant: "destructive" });
+      return;
+    }
+    setSavingHist(true);
+    const { error } = await supabase.rpc("admin_salvar_registro", {
+      p_lista_contato_id: item.lista_contato_id,
+      p_status: novoStatus,
+      p_observacao: item.observacao || null,
+      p_horario_retorno: novoStatus === "retornar" ? item.horario_retorno || null : null,
+    });
+    if (error) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Status atualizado!" });
+      setEditingHistIdx(null);
+      if (selectedContato) loadHistorico(selectedContato.id);
+    }
+    setSavingHist(false);
   }
 
   async function saveContato() {
@@ -384,14 +418,62 @@ export function ContatosTab({ initialStatusFilter }: ContatosTabProps) {
                 ) : (
                   <div className="space-y-2">
                     {historico.map((h, i) => (
-                      <div key={i} className="p-3 rounded-lg bg-secondary/50 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <Badge className={`${statusBadgeClass[h.status || ""] || "status-badge-pendente"} border-0 text-xs`}>
-                            {statusLabels[h.status || ""] || h.status}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {h.data_ligacao ? new Date(h.data_ligacao).toLocaleString("pt-BR") : "—"}
-                          </span>
+                      <div key={i} className="p-3 rounded-lg bg-secondary/50 space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {editingHistIdx === i ? (
+                            // Modo edição inline
+                            <div className="flex items-center gap-2 flex-1">
+                              <Select
+                                value={editingHistStatus}
+                                onValueChange={setEditingHistStatus}
+                              >
+                                <SelectTrigger className="h-7 text-xs w-40">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Object.entries(statusLabels).map(([k, v]) => (
+                                    <SelectItem key={k} value={k} className="text-xs">{v}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-6 w-6"
+                                disabled={savingHist}
+                                onClick={() => salvarEdicaoHistorico(h, editingHistStatus)}
+                              >
+                                {savingHist ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 text-green-500" />}
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-6 w-6"
+                                onClick={() => setEditingHistIdx(null)}
+                              >
+                                <X className="h-3 w-3 text-destructive" />
+                              </Button>
+                            </div>
+                          ) : (
+                            // Modo visualização
+                            <>
+                              <Badge className={`${statusBadgeClass[h.status || ""] || "status-badge-pendente"} border-0 text-xs`}>
+                                {statusLabels[h.status || ""] || h.status}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {h.data_ligacao ? new Date(h.data_ligacao).toLocaleString("pt-BR") : "—"}
+                              </span>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-5 w-5 ml-auto"
+                                title="Editar status"
+                                onClick={() => { setEditingHistIdx(i); setEditingHistStatus(h.status || ""); }}
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {h.lista_nome && <span>Lista: {h.lista_nome}</span>}
