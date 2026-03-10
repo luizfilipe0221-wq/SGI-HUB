@@ -35,6 +35,17 @@ const statusLabels: Record<string, string> = {
   pendente: "Pendente",
 };
 
+// Status que podem ser inseridos no banco (sem "pendente" — estado virtual)
+const statusEditaveis: Record<string, string> = {
+  atendeu: "Atendeu",
+  "nao-atendeu": "Não Atendeu",
+  "caixa-postal": "Caixa Postal",
+  invalido: "Inválido",
+  "nao-quer": "Não Quer",
+  retornar: "Retornar",
+  revisita: "Revisita",
+};
+
 interface Contato {
   id: number;
   nome: string | null;

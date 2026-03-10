@@ -233,7 +233,7 @@ export default function OperatorView() {
   // ── Loading ──
   if (loading) {
     return (
-      <div className="min-h-screen px-4 py-6 max-w-lg mx-auto space-y-4">
+      <div className="min-h-screen px-4 py-6 max-w-4xl mx-auto space-y-4">
         <Skeleton className="h-12 w-full" />
         {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-16 w-full rounded-2xl" />
@@ -295,18 +295,18 @@ export default function OperatorView() {
     <div className="min-h-screen pb-8">
       {/* Header */}
       <header className="glass-header sticky top-0 z-50 px-4 py-3">
-        <div className="flex items-center justify-between max-w-lg mx-auto">
+        <div className="flex items-center justify-between max-w-4xl mx-auto">
           <Logo />
           <span className="text-[13px] text-muted-foreground">{nomeOperador}</span>
         </div>
-        <div className="mt-2 max-w-lg mx-auto flex items-center gap-2">
+        <div className="mt-2 max-w-4xl mx-auto flex items-center gap-2">
           <Progress value={progressPct} className="h-1.5 flex-1" />
           <span className="text-xs text-muted-foreground font-medium">{doneCount} de {totalCount}</span>
         </div>
       </header>
 
       {/* Contact list */}
-      <div className="px-4 py-4 max-w-lg mx-auto space-y-3">
+      <div className="px-4 py-4 max-w-4xl mx-auto space-y-3">
         {contatos.map((contato, i) => (
           <ContactRow
             key={contato.lista_contato_id}
