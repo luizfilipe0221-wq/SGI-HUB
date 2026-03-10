@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { BarChart2, ChevronLeft, ChevronRight, Pencil, Loader2 } from "lucide-react";
+import { supabaseQuery } from "@/lib/supabaseHelper";
 
 const statusBadgeClass: Record<string, string> = {
   atendeu: "status-badge-atendeu",
@@ -73,7 +74,7 @@ export function ResultsTab() {
 
   async function loadResults() {
     setLoading(true);
-    const { data } = await supabase.from("painel_resultados").select("*");
+    const data = await supabaseQuery(async () => await supabase.from("painel_resultados").select("*"));
     setResults((data as Resultado[]) || []);
     setLoading(false);
   }
@@ -91,14 +92,14 @@ export function ResultsTab() {
     if (!editState || !editState.row.lista_contato_id) return;
     setSaving(true);
     try {
-      const { error } = await supabase.rpc("admin_salvar_registro", {
-        p_lista_contato_id: editState.row.lista_contato_id,
-        p_status: editState.status,
-        p_observacao: editState.observacao.trim() || null,
-        p_horario_retorno: editState.status === "retornar" && editState.horario_retorno
-          ? editState.horario_retorno
-          : null,
-      });
+      await supabaseQuery(async () => await supabase.rpc("admin_salvar_registro", {
+                p_lista_contato_id: editState.row.lista_contato_id,
+                p_status: editState.status,
+                p_observacao: editState.observacao.trim() || null,
+                p_horario_retorno: editState.status === "retornar" && editState.horario_retorno
+                  ? editState.horario_retorno
+                  : null,
+              }));
 
       if (error) throw error;
 

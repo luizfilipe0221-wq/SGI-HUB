@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "@/hooks/use-toast";
 import { ChevronDown, Copy, ToggleLeft, ToggleRight, MoreVertical, Edit, CopyPlus, Trash2, RefreshCw, List } from "lucide-react";
+import { supabaseQuery } from "@/lib/supabaseHelper";
 
 interface Lista {
   id: number;
@@ -52,7 +53,7 @@ export function ManageListsTab() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const { data: listasData } = await supabase.from("listas").select("*").order("criado_em", { ascending: false });
+    const listasData = await supabaseQuery(async () => await supabase.from("listas").select("*").order("criado_em", { ascending: false }));
     setListas(listasData || []);
 
     if (listasData && listasData.length > 0) {
@@ -67,7 +68,7 @@ export function ManageListsTab() {
         : { data: [] };
       const telefoneMap = new Map((contatosData || []).map((c) => [c.id, c.telefone]));
 
-      const { data: regData } = await supabase.from("registros").select("lista_contato_id");
+      const regData = await supabaseQuery(async () => await supabase.from("registros").select("lista_contato_id"));
       const regSet = new Set((regData || []).map((r) => r.lista_contato_id));
 
       const grouped: Record<number, Map<string, Operador>> = {};
@@ -108,7 +109,7 @@ export function ManageListsTab() {
         }
       });
 
-      const { data: painelData } = await supabase.from("painel_resultados").select("lista_id, ultimo_status");
+      const painelData = await supabaseQuery(async () => await supabase.from("painel_resultados").select("lista_id, ultimo_status"));
       (painelData || []).forEach((p) => {
         const s = stats[p.lista_id!];
         if (!s) return;
@@ -137,12 +138,12 @@ export function ManageListsTab() {
   async function toggleLista(id: number, ativa: boolean) {
     const listaTarget = listas.find(l => l.id === id);
     if (!listaTarget) return;
-    const { error } = await supabase.rpc("admin_update_lista", {
-      p_lista_id: id,
-      p_nome: listaTarget.nome,
-      p_descricao: listaTarget.descricao,
-      p_ativa: !ativa
-    });
+    await supabaseQuery(async () => await supabase.rpc("admin_update_lista", {
+            p_lista_id: id,
+            p_nome: listaTarget.nome,
+            p_descricao: listaTarget.descricao,
+            p_ativa: !ativa
+          }));
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
     } else {
@@ -152,10 +153,10 @@ export function ManageListsTab() {
   }
 
   async function toggleLink(token: string, ativo: boolean) {
-    const { error } = await supabase.rpc("admin_update_link_operador", {
-      p_token_operador: token,
-      p_ativo: !ativo,
-    });
+    await supabaseQuery(async () => await supabase.rpc("admin_update_link_operador", {
+            p_token_operador: token,
+            p_ativo: !ativo,
+          }));
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
     } else {
@@ -171,12 +172,12 @@ export function ManageListsTab() {
 
   async function saveEdit() {
     if (!editLista) return;
-    const { error } = await supabase.rpc("admin_update_lista", {
-      p_lista_id: editLista.id,
-      p_nome: editNome.trim(),
-      p_descricao: editDescricao.trim() || null,
-      p_ativa: editLista.ativa,
-    });
+    await supabaseQuery(async () => await supabase.rpc("admin_update_lista", {
+            p_lista_id: editLista.id,
+            p_nome: editNome.trim(),
+            p_descricao: editDescricao.trim() || null,
+            p_ativa: editLista.ativa,
+          }));
     
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
@@ -188,7 +189,7 @@ export function ManageListsTab() {
   }
 
   async function duplicarLista(lista: Lista) {
-    const { data: lcData } = await supabase.from("lista_contatos").select("contato_id, nome_operador").eq("lista_id", lista.id);
+    const lcData = await supabaseQuery(async () => await supabase.from("lista_contatos").select("contato_id, nome_operador").eq("lista_id", lista.id));
     if (!lcData || lcData.length === 0) {
       toast({ title: "Lista vazia, não duplicada.", variant: "destructive" });
       return;
@@ -200,12 +201,12 @@ export function ManageListsTab() {
     }));
     
     toast({ title: "Duplicando..." });
-    const { error } = await supabase.rpc("criar_lista_completa", {
-      p_nome: `Cópia de ${lista.nome}`,
-      p_descricao: lista.descricao || "",
-      p_contatos: payload,
-      p_ativa: true,
-    });
+    await supabaseQuery(async () => await supabase.rpc("criar_lista_completa", {
+            p_nome: `Cópia de ${lista.nome}`,
+            p_descricao: lista.descricao || "",
+            p_contatos: payload,
+            p_ativa: true,
+          }));
 
     if (error) {
       toast({ title: "Erro ao duplicar", description: error.message, variant: "destructive" });
@@ -224,7 +225,7 @@ export function ManageListsTab() {
     toast({ title: "Excluindo..." });
 
     // Depois faz a deleção no banco em background via RPC (contorna RLS)
-    const { error } = await supabase.rpc("admin_excluir_lista", { p_lista_id: id });
+    await supabaseQuery(async () => await supabase.rpc("admin_excluir_lista", { p_lista_id: id }));
     if (error) {
        toast({ title: "Erro na exclusão", description: error.message, variant: "destructive" });
        // Em caso de erro, seria ideal "desfazer" a UI otimista recarregando a lista

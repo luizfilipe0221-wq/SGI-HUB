@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { supabasePredios as supabase } from '@/integrations/supabase/predios';
 import { useAuth } from '@/hooks/predios/useAuth';
+import { supabaseQuery } from "@/lib/supabaseHelper";
 
 type AuditAction = 
   | 'LOGIN' 
@@ -64,14 +65,14 @@ export function useAuditLog() {
 
     try {
       // Use RPC to call the security definer function
-      await supabase.rpc('create_audit_log', {
-        _user_id: user.id,
-        _action: action,
-        _entity_type: entityType,
-        _entity_id: entityId || null,
-        _old_data: oldData ? JSON.stringify(oldData) : null,
-        _new_data: newData ? JSON.stringify(newData) : null,
-      });
+      await supabaseQuery(async () => await supabase.rpc('create_audit_log', {
+                _user_id: user.id,
+                _action: action,
+                _entity_type: entityType,
+                _entity_id: entityId || null,
+                _old_data: oldData ? JSON.stringify(oldData) : null,
+                _new_data: newData ? JSON.stringify(newData) : null,
+              }));
     } catch (error) {
       // Don't throw - audit logging should not break the main flow
       console.error('Failed to create audit log:', error);

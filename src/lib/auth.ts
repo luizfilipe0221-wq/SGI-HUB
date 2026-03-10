@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseQuery } from "@/lib/supabaseHelper";
 
 export interface AdminSession {
   id: number;
@@ -7,10 +8,10 @@ export interface AdminSession {
 }
 
 export async function loginAdmin(email: string, senha: string): Promise<AdminSession> {
-  const { data, error } = await supabase.rpc("verificar_login", {
-    p_email: email.toLowerCase().trim(),
-    p_senha: senha,
-  });
+  const data = await supabaseQuery(async () => await supabase.rpc("verificar_login", {
+          p_email: email.toLowerCase().trim(),
+          p_senha: senha,
+        }));
 
   if (error) {
     throw new Error("Email ou senha incorretos.");

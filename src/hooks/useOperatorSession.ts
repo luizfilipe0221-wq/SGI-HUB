@@ -10,6 +10,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { supabaseQuery } from "@/lib/supabaseHelper";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -202,12 +203,12 @@ export function useOperatorSession(token: string | undefined): OperatorSessionSt
         }
         setSaving(true);
 
-        const { error: err } = await supabase.rpc("admin_salvar_registro", {
-            p_lista_contato_id: lista_contato_id,
-            p_status: statusValue,
-            p_observacao: observacaoValue.trim() || null,
-            p_horario_retorno: statusValue === "retornar" ? horarioRetornoValue || null : null,
-        });
+        await supabaseQuery(async () => await supabase.rpc("admin_salvar_registro", {
+                    p_lista_contato_id: lista_contato_id,
+                    p_status: statusValue,
+                    p_observacao: observacaoValue.trim() || null,
+                    p_horario_retorno: statusValue === "retornar" ? horarioRetornoValue || null : null,
+                }));
 
         if (err) {
             toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });

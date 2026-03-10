@@ -11,6 +11,7 @@ import {
   BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend,
 } from "recharts";
+import { supabaseQuery } from "@/lib/supabaseHelper";
 
 interface Stats {
   totalContatos: number;
@@ -111,7 +112,7 @@ export function OverviewTab({ onNavigateTab }: OverviewTabProps) {
     const allListas = listasRes.data || [];
     const allLC = lcRes.data || [];
 
-    const { data: regData } = await supabase.from("registros").select("lista_contato_id");
+    const regData = await supabaseQuery(async () => await supabase.from("registros").select("lista_contato_id"));
     const registeredLCIds = new Set((regData || []).map((r) => r.lista_contato_id));
 
     const listRows: ListaRow[] = allListas.map((l) => {
@@ -123,7 +124,7 @@ export function OverviewTab({ onNavigateTab }: OverviewTabProps) {
 
     const totalPendentes = allLC.length - registeredLCIds.size;
 
-    const { data: estData } = await supabase.from("estatisticas_lista").select("*");
+    const estData = await supabaseQuery(async () => await supabase.from("estatisticas_lista").select("*"));
     const aggCounts: Record<string, number> = { atendeu: 0, "nao-atendeu": 0, "caixa-postal": 0, invalido: 0, "nao-quer": 0, retornar: 0, pendente: 0 };
 
     (estData || []).forEach((e: Record<string, unknown>) => {
@@ -143,7 +144,7 @@ export function OverviewTab({ onNavigateTab }: OverviewTabProps) {
       color: STATUS_COLORS[key] || "#999",
     }));
 
-    const { data: regAll } = await supabase.from("registros").select("criado_em").order("criado_em", { ascending: false }).limit(1000);
+    const regAll = await supabaseQuery(async () => await supabase.from("registros").select("criado_em").order("criado_em", { ascending: false }).limit(1000));
     const dayCounts: Record<string, number> = {};
     const now = new Date();
     for (let i = 13; i >= 0; i--) {

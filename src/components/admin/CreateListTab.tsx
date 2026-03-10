@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { Plus, Trash2, Copy, Loader2, Search, CheckSquare, Filter, ChevronLeft, ChevronRight } from "lucide-react";
+import { supabaseQuery } from "@/lib/supabaseHelper";
 
 interface Contato {
   id: number;
@@ -57,10 +58,10 @@ export function CreateListTab() {
   useEffect(() => { loadContatos(); }, []);
 
   async function loadContatos() {
-    const { data } = await supabase
+    const data = await supabaseQuery(async () => await supabase
       .from("contatos")
       .select("id, nome, telefone, territorio, tipo")
-      .order("id");
+      .order("id"));
     setAllContatos(data || []);
   }
 
@@ -84,17 +85,17 @@ export function CreateListTab() {
 
     if (semLigacao && filtered.length > 0) {
       const ids = filtered.map((c) => c.id);
-      const { data: contactedLC } = await supabase
+      const contactedLC = await supabaseQuery(async () => await supabase
         .from("lista_contatos")
         .select("contato_id, id")
-        .in("contato_id", ids);
+        .in("contato_id", ids));
 
       if (contactedLC && contactedLC.length > 0) {
         const lcIds = contactedLC.map((lc) => lc.id);
-        const { data: regData } = await supabase
+        const regData = await supabaseQuery(async () => await supabase
           .from("registros")
           .select("lista_contato_id")
-          .in("lista_contato_id", lcIds);
+          .in("lista_contato_id", lcIds));
         const regLCIds = new Set((regData || []).map((r) => r.lista_contato_id));
         const contactedWithReg = contactedLC.filter((lc) => regLCIds.has(lc.id));
         const contactedIds = new Set(contactedWithReg.map((lc) => lc.contato_id));
@@ -195,14 +196,14 @@ export function CreateListTab() {
       }
 
       // Chamar RPC com SECURITY DEFINER — contorna o RLS sem expor service_role key
-      const { data: result, error: rpcErr } = await supabase.rpc("criar_lista_completa", {
-        p_nome: nome.trim(),
-        p_descricao: descricao.trim() || "",
-        p_contatos: contatosPayload,
-        p_ativa: true,
-      });
+      const result = await supabaseQuery(async () => await supabase.rpc("criar_lista_completa", {
+                  p_nome: nome.trim(),
+                  p_descricao: descricao.trim() || "",
+                  p_contatos: contatosPayload,
+                  p_ativa: true,
+                }));
 
-      if (rpcErr || !result) throw rpcErr;
+      if (!result) throw new Error("Erro desconhecido ao gerar operação");
 
       // Extrair os tokens dos operadores do resultado
       const generatedLinks: { nome: string; link: string }[] = [];
