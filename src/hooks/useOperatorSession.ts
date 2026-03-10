@@ -63,6 +63,7 @@ export interface OperatorSessionState {
     setHistoryOpen: (open: boolean) => void;
     setAllDone: (done: boolean) => void;
     salvar: () => Promise<void>;
+    salvarContato: (lista_contato_id: number, status: string, observacao: string, horarioRetorno: string) => Promise<boolean>;
     parsePhones: (telefone: string) => string[];
 }
 
@@ -188,48 +189,61 @@ export function useOperatorSession(token: string | undefined): OperatorSessionSt
         );
     }, []);
 
-    // Save register and advance contact
-    const salvar = useCallback(async () => {
-        if (!status) {
+    // Save register for a specific lista_contato_id
+    const salvarContato = useCallback(async (
+        lista_contato_id: number,
+        statusValue: string,
+        observacaoValue: string,
+        horarioRetornoValue: string,
+    ) => {
+        if (!statusValue) {
             toast({ title: "Selecione um status", variant: "destructive" });
-            return;
+            return false;
         }
-        const contato = contatos[currentIdx];
         setSaving(true);
 
-        const { error: err } = await supabase.from("registros").insert([{
-            lista_contato_id: contato.lista_contato_id,
-            status,
-            observacao: observacao.trim() || null,
-            horario_retorno: status === "retornar" ? horarioRetorno || null : null,
-        }]);
+        const { error: err } = await supabase.rpc("admin_salvar_registro", {
+            p_lista_contato_id: lista_contato_id,
+            p_status: statusValue,
+            p_observacao: observacaoValue.trim() || null,
+            p_horario_retorno: statusValue === "retornar" ? horarioRetornoValue || null : null,
+        });
 
         if (err) {
             toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });
             setSaving(false);
-            return;
+            return false;
         }
 
         const newCompleted = new Set(completed);
-        newCompleted.add(contato.lista_contato_id);
+        newCompleted.add(lista_contato_id);
         const newStatuses = new Map(completedStatuses);
-        newStatuses.set(contato.lista_contato_id, status);
+        newStatuses.set(lista_contato_id, statusValue);
 
         setCompleted(newCompleted);
         setCompletedStatuses(newStatuses);
         try { navigator.vibrate?.(50); } catch (_) { /* vibration API optional */ }
-        toast({ title: "Registrado com sucesso!" });
+        toast({ title: "Registrado!" });
         setSaving(false);
 
-        const nextIdx = contatos.findIndex((c, i) => i > currentIdx && !newCompleted.has(c.lista_contato_id));
-        if (nextIdx !== -1) {
-            setCurrentIdx(nextIdx);
-        } else {
-            const anyLeft = contatos.findIndex((c) => !newCompleted.has(c.lista_contato_id));
-            if (anyLeft === -1) setAllDone(true);
-            else setCurrentIdx(anyLeft);
+        const anyLeft = contatos.findIndex((c) => !newCompleted.has(c.lista_contato_id));
+        if (anyLeft === -1) setAllDone(true);
+
+        return true;
+    }, [completed, completedStatuses, contatos]);
+
+    // Legacy: Save register and advance contact (kept for compatibility)
+    const salvar = useCallback(async () => {
+        const contato = contatos[currentIdx];
+        const ok = await salvarContato(contato.lista_contato_id, status, observacao, horarioRetorno);
+        if (ok) {
+            const newCompleted = new Set(completed);
+            newCompleted.add(contato.lista_contato_id);
+            const nextIdx = contatos.findIndex((c, i) => i > currentIdx && !newCompleted.has(c.lista_contato_id));
+            if (nextIdx !== -1) setCurrentIdx(nextIdx);
         }
-    }, [status, contatos, currentIdx, observacao, horarioRetorno, completed, completedStatuses]);
+    }, [status, contatos, currentIdx, observacao, horarioRetorno, completed, salvarContato]);
+
 
     const parsePhones = useCallback(
         (telefone: string) => telefone.split(/[|/,]/).map((t) => t.trim()).filter(Boolean),
@@ -255,6 +269,6 @@ export function useOperatorSession(token: string | undefined): OperatorSessionSt
         loading, saving, error, allDone, historyOpen,
         setCurrentIdx, setStatus, setObservacao, setHorarioRetorno,
         setHistoryOpen, setAllDone,
-        salvar, parsePhones,
+        salvar, salvarContato, parsePhones,
     };
 }
