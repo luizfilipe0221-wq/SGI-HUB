@@ -442,7 +442,7 @@ export function ContatosTab({ initialStatusFilter }: ContatosTabProps) {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {Object.entries(statusLabels).map(([k, v]) => (
+                                  {Object.entries(statusEditaveis).map(([k, v]) => (
                                     <SelectItem key={k} value={k} className="text-xs">{v}</SelectItem>
                                   ))}
                                 </SelectContent>
@@ -479,7 +479,12 @@ export function ContatosTab({ initialStatusFilter }: ContatosTabProps) {
                                 variant="ghost"
                                 className="h-5 w-5 ml-auto"
                                 title="Editar status"
-                                onClick={() => { setEditingHistIdx(i); setEditingHistStatus(h.status || ""); }}
+                                onClick={() => {
+                                  setEditingHistIdx(i);
+                                  // Se o status atual não estiver em statusEditaveis, seleciona o primeiro válido (ou vazio se preferir obrigar a escolher)
+                                  const s = h.status || "";
+                                  setEditingHistStatus(statusEditaveis[s] ? s : "atendeu");
+                                }}
                               >
                                 <Pencil className="h-3 w-3" />
                               </Button>
