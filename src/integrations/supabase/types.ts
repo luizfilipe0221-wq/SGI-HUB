@@ -674,6 +674,34 @@ export type Database = {
         }
         Returns: void
       }
+      admin_update_lista: {
+        Args: {
+          p_lista_id: number
+          p_nome: string
+          p_descricao: string | null
+          p_ativa: boolean
+        }
+        Returns: void
+      }
+      admin_update_link_operador: {
+        Args: {
+          p_token_operador: string
+          p_ativo: boolean
+        }
+        Returns: void
+      }
+      admin_update_contato: {
+        Args: {
+          p_contato_id: number
+          p_nome: string | null
+          p_telefone: string
+          p_endereco: string | null
+          p_tipo: string | null
+          p_territorio: string | null
+          p_obs_original: string | null
+        }
+        Returns: void
+      }
     }
     Enums: {
       [_ in never]: never

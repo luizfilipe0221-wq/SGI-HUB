@@ -226,17 +226,15 @@ export function ContatosTab({ initialStatusFilter }: ContatosTabProps) {
   async function saveContato() {
     if (!selectedContato) return;
     setSaving(true);
-    const { error } = await supabase
-      .from("contatos")
-      .update({
-        nome: editNome.trim() || null,
-        telefone: editTelefone.trim(),
-        endereco: editEndereco.trim() || null,
-        tipo: editTipo.trim() || null,
-        territorio: editTerritorio.trim() || null,
-        obs_original: editObs.trim() || null,
-      })
-      .eq("id", selectedContato.id);
+    const { error } = await supabase.rpc("admin_update_contato", {
+      p_contato_id: selectedContato.id,
+      p_nome: editNome.trim() || null,
+      p_telefone: editTelefone.trim(),
+      p_endereco: editEndereco.trim() || null,
+      p_tipo: editTipo.trim() || null,
+      p_territorio: editTerritorio.trim() || null,
+      p_obs_original: editObs.trim() || null,
+    });
 
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });

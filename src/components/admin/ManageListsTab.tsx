@@ -135,15 +135,33 @@ export function ManageListsTab() {
   }, [loadData]);
 
   async function toggleLista(id: number, ativa: boolean) {
-    await supabase.from("listas").update({ ativa: !ativa }).eq("id", id);
-    toast({ title: ativa ? "Lista desativada" : "Lista reativada" });
-    loadData();
+    const listaTarget = listas.find(l => l.id === id);
+    if (!listaTarget) return;
+    const { error } = await supabase.rpc("admin_update_lista", {
+      p_lista_id: id,
+      p_nome: listaTarget.nome,
+      p_descricao: listaTarget.descricao,
+      p_ativa: !ativa
+    });
+    if (error) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: ativa ? "Lista desativada" : "Lista reativada" });
+      loadData();
+    }
   }
 
   async function toggleLink(token: string, ativo: boolean) {
-    await supabase.from("lista_contatos").update({ link_ativo: !ativo }).eq("token_operador", token);
-    toast({ title: ativo ? "Link desativado. O operador não conseguirá mais acessar." : "Link reativado" });
-    loadData();
+    const { error } = await supabase.rpc("admin_update_link_operador", {
+      p_token_operador: token,
+      p_ativo: !ativo,
+    });
+    if (error) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: ativo ? "Link desativado. O operador não conseguirá mais acessar." : "Link reativado" });
+      loadData();
+    }
   }
 
   function copyLink(token: string) {
@@ -153,10 +171,20 @@ export function ManageListsTab() {
 
   async function saveEdit() {
     if (!editLista) return;
-    await supabase.from("listas").update({ nome: editNome.trim(), descricao: editDescricao.trim() || null }).eq("id", editLista.id);
-    toast({ title: "Lista atualizada!" });
-    setEditLista(null);
-    loadData();
+    const { error } = await supabase.rpc("admin_update_lista", {
+      p_lista_id: editLista.id,
+      p_nome: editNome.trim(),
+      p_descricao: editDescricao.trim() || null,
+      p_ativa: editLista.ativa,
+    });
+    
+    if (error) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Lista atualizada!" });
+      setEditLista(null);
+      loadData();
+    }
   }
 
   async function duplicarLista(lista: Lista) {
