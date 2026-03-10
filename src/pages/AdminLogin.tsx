@@ -33,7 +33,7 @@ export default function AdminLogin() {
       <Card className="w-full max-w-md glass-card-elevated">
         <CardHeader className="items-center pb-2">
           <Logo className="mb-2" />
-          <p className="text-muted-foreground text-[13px]">Painel administrativo</p>
+          <p className="text-muted-foreground text-[13px]">Acesso ao Painel</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
