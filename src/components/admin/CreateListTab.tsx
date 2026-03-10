@@ -322,16 +322,18 @@ export function CreateListTab() {
 
         {/* Links Modal */}
         <Dialog open={showModal} onOpenChange={(o) => { if (!o) resetForm(); }}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg w-full">
             <DialogHeader>
               <DialogTitle className="font-syne">Links dos Operadores</DialogTitle>
             </DialogHeader>
             <div className="space-y-3">
               {links.map((l, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
-                  <span className="font-medium min-w-[80px]">{l.nome}</span>
-                  <code className="text-xs text-muted-foreground flex-1 truncate">{l.link}</code>
-                  <Button size="sm" variant="outline" onClick={() => copyLink(l.link)}>
+                <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 overflow-hidden">
+                  <div className="flex-1 min-w-0 space-y-0.5">
+                    <p className="text-sm font-semibold leading-tight">{l.nome}</p>
+                    <p className="text-xs text-muted-foreground truncate" title={l.link}>{l.link}</p>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => copyLink(l.link)} className="shrink-0">
                     <Copy className="h-3 w-3" />
                   </Button>
                 </div>
@@ -342,6 +344,7 @@ export function CreateListTab() {
             </div>
           </DialogContent>
         </Dialog>
+
       </div>
     );
   }

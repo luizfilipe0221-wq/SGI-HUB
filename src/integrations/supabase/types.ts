@@ -659,6 +659,15 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_salvar_registro: {
+        Args: {
+          p_lista_contato_id: number
+          p_status: string
+          p_observacao?: string | null
+          p_horario_retorno?: string | null
+        }
+        Returns: void
+      }
     }
     Enums: {
       [_ in never]: never

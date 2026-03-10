@@ -5,9 +5,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BarChart2, ChevronLeft, ChevronRight } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { BarChart2, ChevronLeft, ChevronRight, Pencil, Loader2 } from "lucide-react";
 
 const statusBadgeClass: Record<string, string> = {
   atendeu: "status-badge-atendeu",
@@ -34,15 +38,23 @@ const statusLabels: Record<string, string> = {
 const PAGE_SIZE = 25;
 
 interface Resultado {
-  contato_nome: string;
-  telefone: string;
-  territorio: string;
-  nome_operador: string;
-  ultimo_status: string;
-  ultima_obs: string;
-  ultimo_horario_retorno: string;
-  ultima_ligacao_em: string;
-  total_tentativas: number;
+  lista_contato_id: number | null;
+  contato_nome: string | null;
+  telefone: string | null;
+  territorio: string | null;
+  nome_operador: string | null;
+  ultimo_status: string | null;
+  ultima_obs: string | null;
+  ultimo_horario_retorno: string | null;
+  ultima_ligacao_em: string | null;
+  total_tentativas: number | null;
+}
+
+interface EditState {
+  row: Resultado;
+  status: string;
+  observacao: string;
+  horario_retorno: string;
 }
 
 export function ResultsTab() {
@@ -53,13 +65,52 @@ export function ResultsTab() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
 
+  // Edit modal
+  const [editState, setEditState] = useState<EditState | null>(null);
+  const [saving, setSaving] = useState(false);
+
   useEffect(() => { loadResults(); }, []);
 
   async function loadResults() {
     setLoading(true);
     const { data } = await supabase.from("painel_resultados").select("*");
-    setResults(data || []);
+    setResults((data as Resultado[]) || []);
     setLoading(false);
+  }
+
+  function openEdit(row: Resultado) {
+    setEditState({
+      row,
+      status: row.ultimo_status || "pendente",
+      observacao: row.ultima_obs || "",
+      horario_retorno: row.ultimo_horario_retorno || "",
+    });
+  }
+
+  async function salvarEdicao() {
+    if (!editState || !editState.row.lista_contato_id) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase.rpc("admin_salvar_registro", {
+        p_lista_contato_id: editState.row.lista_contato_id,
+        p_status: editState.status,
+        p_observacao: editState.observacao.trim() || null,
+        p_horario_retorno: editState.status === "retornar" && editState.horario_retorno
+          ? editState.horario_retorno
+          : null,
+      });
+
+      if (error) throw error;
+
+      toast({ title: "Salvo!", description: "Registro atualizado com sucesso." });
+      setEditState(null);
+      await loadResults();
+    } catch (err: any) {
+      console.error("Erro ao salvar registro:", err);
+      toast({ title: "Erro", description: err?.message || "Falha ao salvar.", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   }
 
   const filtered = results.filter((r) => {
@@ -94,6 +145,7 @@ export function ResultsTab() {
 
   return (
     <div className="space-y-4">
+      {/* Filtros */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setPage(0); }}>
           <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
@@ -116,6 +168,7 @@ export function ResultsTab() {
         </Select>
       </div>
 
+      {/* Tabela */}
       <Card className="border-border/50">
         <CardContent className="p-0">
           <Table>
@@ -130,6 +183,7 @@ export function ResultsTab() {
                 <TableHead>Retorno</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead>Tent.</TableHead>
+                <TableHead className="text-center">Editar</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -140,8 +194,8 @@ export function ResultsTab() {
                   <TableCell>{r.territorio}</TableCell>
                   <TableCell>{r.nome_operador}</TableCell>
                   <TableCell>
-                    <Badge className={`${statusBadgeClass[r.ultimo_status] || "status-badge-pendente"} border-0`}>
-                      {statusLabels[r.ultimo_status] || r.ultimo_status}
+                    <Badge className={`${statusBadgeClass[r.ultimo_status || ""] || "status-badge-pendente"} border-0`}>
+                      {statusLabels[r.ultimo_status || ""] || r.ultimo_status || "Pendente"}
                     </Badge>
                   </TableCell>
                   <TableCell className="max-w-[150px] truncate text-muted-foreground">{r.ultima_obs}</TableCell>
@@ -149,17 +203,34 @@ export function ResultsTab() {
                   <TableCell className="text-muted-foreground">
                     {r.ultima_ligacao_em ? new Date(r.ultima_ligacao_em).toLocaleDateString("pt-BR") : "—"}
                   </TableCell>
-                  <TableCell className="text-center">{r.total_tentativas}</TableCell>
+                  <TableCell className="text-center">{r.total_tentativas ?? 0}</TableCell>
+                  <TableCell className="text-center">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={() => openEdit(r)}
+                      disabled={!r.lista_contato_id}
+                      title="Editar resultado"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
               {paged.length === 0 && (
-                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground">Nenhum resultado encontrado.</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center text-muted-foreground">
+                    Nenhum resultado encontrado.
+                  </TableCell>
+                </TableRow>
               )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
 
+      {/* Paginação */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
@@ -171,6 +242,73 @@ export function ResultsTab() {
           </Button>
         </div>
       )}
+
+      {/* Modal de edição */}
+      <Dialog open={!!editState} onOpenChange={(o) => { if (!o) setEditState(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Resultado</DialogTitle>
+            {editState && (
+              <p className="text-sm text-muted-foreground mt-1">
+                <span className="font-medium text-foreground">{editState.row.contato_nome}</span>
+                {" · "}{editState.row.nome_operador}
+              </p>
+            )}
+          </DialogHeader>
+
+          {editState && (
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select
+                  value={editState.status}
+                  onValueChange={(v) => setEditState({ ...editState, status: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(statusLabels).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Observação</Label>
+                <Textarea
+                  value={editState.observacao}
+                  onChange={(e) => setEditState({ ...editState, observacao: e.target.value })}
+                  placeholder="Observação opcional..."
+                  rows={3}
+                />
+              </div>
+
+              {editState.status === "retornar" && (
+                <div className="space-y-2">
+                  <Label>Horário de retorno</Label>
+                  <Input
+                    type="datetime-local"
+                    value={editState.horario_retorno}
+                    onChange={(e) => setEditState({ ...editState, horario_retorno: e.target.value })}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditState(null)} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={salvarEdicao} disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
