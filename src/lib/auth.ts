@@ -13,10 +13,6 @@ export async function loginAdmin(email: string, senha: string): Promise<AdminSes
           p_senha: senha,
         }));
 
-  if (error) {
-    throw new Error("Email ou senha incorretos.");
-  }
-
   const row = Array.isArray(data) ? data[0] : data;
   if (!row || !row.autenticado) {
     throw new Error("Email ou senha incorretos.");
