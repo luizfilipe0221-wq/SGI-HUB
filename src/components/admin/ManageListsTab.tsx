@@ -160,23 +160,31 @@ export function ManageListsTab() {
   }
 
   async function duplicarLista(lista: Lista) {
-    const { data: newLista, error: err } = await supabase
-      .from("listas")
-      .insert({ nome: `Cópia de ${lista.nome}`, descricao: lista.descricao, ativa: true })
-      .select("id")
-      .single();
-    if (err || !newLista) {
-      toast({ title: "Erro ao duplicar", variant: "destructive" });
+    const { data: lcData } = await supabase.from("lista_contatos").select("contato_id, nome_operador").eq("lista_id", lista.id);
+    if (!lcData || lcData.length === 0) {
+      toast({ title: "Lista vazia, não duplicada.", variant: "destructive" });
       return;
     }
-    const { data: lcData } = await supabase.from("lista_contatos").select("contato_id").eq("lista_id", lista.id);
-    if (lcData && lcData.length > 0) {
-      const uniqueIds = [...new Set(lcData.map((lc) => lc.contato_id))];
-      const rows = uniqueIds.map((cid, i) => ({ lista_id: newLista.id, contato_id: cid, ordem: i + 1 }));
-      await supabase.from("lista_contatos").insert(rows);
+    const payload = lcData.map((lc, i) => ({
+      contato_id: lc.contato_id,
+      nome_operador: lc.nome_operador || "Operador",
+      ordem: i + 1,
+    }));
+    
+    toast({ title: "Duplicando..." });
+    const { error } = await supabase.rpc("criar_lista_completa", {
+      p_nome: `Cópia de ${lista.nome}`,
+      p_descricao: lista.descricao || "",
+      p_contatos: payload,
+      p_ativa: true,
+    });
+
+    if (error) {
+      toast({ title: "Erro ao duplicar", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Lista duplicada!" });
+      loadData();
     }
-    toast({ title: "Lista duplicada!" });
-    loadData();
   }
 
   async function confirmarDelete() {

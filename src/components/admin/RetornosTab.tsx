@@ -43,8 +43,8 @@ export function RetornosTab() {
     return () => clearInterval(interval);
   }, [loadData]);
 
-  const operadores = [...new Set(data.map((r) => r.nome_operador).filter(Boolean))] as string[];
-  const territorios = [...new Set(data.map((r) => r.territorio).filter(Boolean))] as string[];
+  const operadores = [...new Set(data.map((r) => r.nome_operador?.trim()).filter(Boolean))] as string[];
+  const territorios = [...new Set(data.map((r) => r.territorio?.trim()).filter(Boolean))] as string[];
 
   const filtered = data.filter((r) => {
     if (filterOperador !== "all" && r.nome_operador !== filterOperador) return false;
