@@ -668,6 +668,12 @@ export type Database = {
         }
         Returns: void
       }
+      admin_excluir_lista: {
+        Args: {
+          p_lista_id: number
+        }
+        Returns: void
+      }
     }
     Enums: {
       [_ in never]: never

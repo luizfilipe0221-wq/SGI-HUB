@@ -185,15 +185,17 @@ export function ManageListsTab() {
     // Atualizar estado local IMEDIATAMENTE para UI responsiva
     setListas((prev) => prev.filter((l) => l.id !== id));
     setDeleteLista(null);
-    toast({ title: "Lista excluída!" });
-    // Depois faz a deleção no banco em background
-    const { data: lcData } = await supabase.from("lista_contatos").select("id").eq("lista_id", id);
-    if (lcData && lcData.length > 0) {
-      const lcIds = lcData.map((lc) => lc.id);
-      await supabase.from("registros").delete().in("lista_contato_id", lcIds);
-      await supabase.from("lista_contatos").delete().eq("lista_id", id);
+    toast({ title: "Excluindo..." });
+
+    // Depois faz a deleção no banco em background via RPC (contorna RLS)
+    const { error } = await supabase.rpc("admin_excluir_lista", { p_lista_id: id });
+    if (error) {
+       toast({ title: "Erro na exclusão", description: error.message, variant: "destructive" });
+       // Em caso de erro, seria ideal "desfazer" a UI otimista recarregando a lista
+       loadData();
+    } else {
+       toast({ title: "Lista excluída!" });
     }
-    await supabase.from("listas").delete().eq("id", id);
   }
 
   if (loading) {
