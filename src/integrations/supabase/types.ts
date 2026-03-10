@@ -650,6 +650,15 @@ export type Database = {
           nome: string
         }[]
       }
+      criar_lista_completa: {
+        Args: {
+          p_nome: string
+          p_descricao: string
+          p_contatos: Json
+          p_ativa?: boolean
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
