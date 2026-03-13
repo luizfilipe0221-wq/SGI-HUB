@@ -13,6 +13,7 @@ import PrediosHome from '@/pages/predios/PrediosHome';
 import Dashboard from '@/pages/predios/Dashboard';
 import LotesList from '@/pages/predios/lotes/LotesList';
 import LoteDetail from '@/pages/predios/lotes/LoteDetail';
+import LoteNovo from '@/pages/predios/lotes/LoteNovo';
 import Buildings from '@/pages/predios/Buildings';
 import BuildingForm from '@/pages/predios/BuildingForm';
 import BuildingDetail from '@/pages/predios/BuildingDetail';
@@ -66,6 +67,7 @@ export function PrediosSection() {
                             <Route index element={<PrediosHome />} />
                             <Route path="dashboard" element={<Dashboard />} />
                             <Route path="lotes" element={<LotesList />} />
+                            <Route path="lotes/novo" element={<LoteNovo />} />
                             <Route path="lotes/:id" element={<LoteDetail />} />
                             <Route path="buildings" element={<Buildings />} />
                             <Route path="buildings/new" element={<BuildingForm />} />

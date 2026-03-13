@@ -101,8 +101,6 @@ export function ResultsTab() {
                   : null,
               }));
 
-      if (error) throw error;
-
       toast({ title: "Salvo!", description: "Registro atualizado com sucesso." });
       setEditState(null);
       await loadResults();

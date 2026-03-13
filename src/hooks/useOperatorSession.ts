@@ -203,15 +203,15 @@ export function useOperatorSession(token: string | undefined): OperatorSessionSt
         }
         setSaving(true);
 
-        await supabaseQuery(async () => await supabase.rpc("admin_salvar_registro", {
-                    p_lista_contato_id: lista_contato_id,
-                    p_status: statusValue,
-                    p_observacao: observacaoValue.trim() || null,
-                    p_horario_retorno: statusValue === "retornar" ? horarioRetornoValue || null : null,
-                }));
-
-        if (err) {
-            toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });
+        try {
+            await supabaseQuery(async () => await supabase.rpc("admin_salvar_registro", {
+                p_lista_contato_id: lista_contato_id,
+                p_status: statusValue,
+                p_observacao: observacaoValue.trim() || null,
+                p_horario_retorno: statusValue === "retornar" ? horarioRetornoValue || null : null,
+            }));
+        } catch (err: any) {
+            toast({ title: "Erro ao salvar", description: err?.message, variant: "destructive" });
             setSaving(false);
             return false;
         }

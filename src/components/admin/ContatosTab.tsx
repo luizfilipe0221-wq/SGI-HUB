@@ -208,42 +208,43 @@ export function ContatosTab({ initialStatusFilter }: ContatosTabProps) {
       return;
     }
     setSavingHist(true);
-    await supabaseQuery(async () => await supabase.rpc("admin_salvar_registro", {
-            p_lista_contato_id: item.lista_contato_id,
-            p_status: novoStatus,
-            p_observacao: item.observacao || null,
-            p_horario_retorno: novoStatus === "retornar" ? item.horario_retorno || null : null,
-          }));
-    if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await supabaseQuery(async () => await supabase.rpc("admin_salvar_registro", {
+        p_lista_contato_id: item.lista_contato_id,
+        p_status: novoStatus,
+        p_observacao: item.observacao || null,
+        p_horario_retorno: novoStatus === "retornar" ? item.horario_retorno || null : null,
+      }));
       toast({ title: "Status atualizado!" });
       setEditingHistIdx(null);
       if (selectedContato) loadHistorico(selectedContato.id);
+    } catch (err: any) {
+      toast({ title: "Erro", description: err?.message, variant: "destructive" });
+    } finally {
+      setSavingHist(false);
     }
-    setSavingHist(false);
   }
 
   async function saveContato() {
     if (!selectedContato) return;
     setSaving(true);
-    await supabaseQuery(async () => await supabase.rpc("admin_update_contato", {
-            p_contato_id: selectedContato.id,
-            p_nome: editNome.trim() || null,
-            p_telefone: editTelefone.trim(),
-            p_endereco: editEndereco.trim() || null,
-            p_tipo: editTipo.trim() || null,
-            p_territorio: editTerritorio.trim() || null,
-            p_obs_original: editObs.trim() || null,
-          }));
-
-    if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await supabaseQuery(async () => await supabase.rpc("admin_update_contato", {
+        p_contato_id: selectedContato.id,
+        p_nome: editNome.trim() || null,
+        p_telefone: editTelefone.trim(),
+        p_endereco: editEndereco.trim() || null,
+        p_tipo: editTipo.trim() || null,
+        p_territorio: editTerritorio.trim() || null,
+        p_obs_original: editObs.trim() || null,
+      }));
       toast({ title: "Salvo!", description: "Contato atualizado com sucesso." });
       loadData();
+    } catch (err: any) {
+      toast({ title: "Erro", description: err?.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   function parsePhones(telefone: string): string[] {

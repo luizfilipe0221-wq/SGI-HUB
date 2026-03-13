@@ -138,30 +138,30 @@ export function ManageListsTab() {
   async function toggleLista(id: number, ativa: boolean) {
     const listaTarget = listas.find(l => l.id === id);
     if (!listaTarget) return;
-    await supabaseQuery(async () => await supabase.rpc("admin_update_lista", {
-            p_lista_id: id,
-            p_nome: listaTarget.nome,
-            p_descricao: listaTarget.descricao,
-            p_ativa: !ativa
-          }));
-    if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await supabaseQuery(async () => await supabase.rpc("admin_update_lista", {
+        p_lista_id: id,
+        p_nome: listaTarget.nome,
+        p_descricao: listaTarget.descricao,
+        p_ativa: !ativa,
+      }));
       toast({ title: ativa ? "Lista desativada" : "Lista reativada" });
       loadData();
+    } catch (err: any) {
+      toast({ title: "Erro", description: err?.message, variant: "destructive" });
     }
   }
 
   async function toggleLink(token: string, ativo: boolean) {
-    await supabaseQuery(async () => await supabase.rpc("admin_update_link_operador", {
-            p_token_operador: token,
-            p_ativo: !ativo,
-          }));
-    if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await supabaseQuery(async () => await supabase.rpc("admin_update_link_operador", {
+        p_token_operador: token,
+        p_ativo: !ativo,
+      }));
       toast({ title: ativo ? "Link desativado. O operador não conseguirá mais acessar." : "Link reativado" });
       loadData();
+    } catch (err: any) {
+      toast({ title: "Erro", description: err?.message, variant: "destructive" });
     }
   }
 
@@ -172,66 +172,59 @@ export function ManageListsTab() {
 
   async function saveEdit() {
     if (!editLista) return;
-    await supabaseQuery(async () => await supabase.rpc("admin_update_lista", {
-            p_lista_id: editLista.id,
-            p_nome: editNome.trim(),
-            p_descricao: editDescricao.trim() || null,
-            p_ativa: editLista.ativa,
-          }));
-    
-    if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await supabaseQuery(async () => await supabase.rpc("admin_update_lista", {
+        p_lista_id: editLista.id,
+        p_nome: editNome.trim(),
+        p_descricao: editDescricao.trim() || null,
+        p_ativa: editLista.ativa,
+      }));
       toast({ title: "Lista atualizada!" });
       setEditLista(null);
       loadData();
+    } catch (err: any) {
+      toast({ title: "Erro", description: err?.message, variant: "destructive" });
     }
   }
 
   async function duplicarLista(lista: Lista) {
-    const lcData = await supabaseQuery(async () => await supabase.from("lista_contatos").select("contato_id, nome_operador").eq("lista_id", lista.id));
-    if (!lcData || lcData.length === 0) {
-      toast({ title: "Lista vazia, não duplicada.", variant: "destructive" });
-      return;
-    }
-    const payload = lcData.map((lc, i) => ({
-      contato_id: lc.contato_id,
-      nome_operador: lc.nome_operador || "Operador",
-      ordem: i + 1,
-    }));
-    
-    toast({ title: "Duplicando..." });
-    await supabaseQuery(async () => await supabase.rpc("criar_lista_completa", {
-            p_nome: `Cópia de ${lista.nome}`,
-            p_descricao: lista.descricao || "",
-            p_contatos: payload,
-            p_ativa: true,
-          }));
-
-    if (error) {
-      toast({ title: "Erro ao duplicar", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      const lcData = await supabaseQuery(async () => await supabase.from("lista_contatos").select("contato_id, nome_operador").eq("lista_id", lista.id));
+      if (!lcData || lcData.length === 0) {
+        toast({ title: "Lista vazia, não duplicada.", variant: "destructive" });
+        return;
+      }
+      const payload = lcData.map((lc, i) => ({
+        contato_id: lc.contato_id,
+        nome_operador: lc.nome_operador || "Operador",
+        ordem: i + 1,
+      }));
+      toast({ title: "Duplicando..." });
+      await supabaseQuery(async () => await supabase.rpc("criar_lista_completa", {
+        p_nome: `Cópia de ${lista.nome}`,
+        p_descricao: lista.descricao || "",
+        p_contatos: payload,
+        p_ativa: true,
+      }));
       toast({ title: "Lista duplicada!" });
       loadData();
+    } catch (err: any) {
+      toast({ title: "Erro ao duplicar", description: err?.message, variant: "destructive" });
     }
   }
 
   async function confirmarDelete() {
     if (!deleteLista) return;
     const id = deleteLista.id;
-    // Atualizar estado local IMEDIATAMENTE para UI responsiva
     setListas((prev) => prev.filter((l) => l.id !== id));
     setDeleteLista(null);
     toast({ title: "Excluindo..." });
-
-    // Depois faz a deleção no banco em background via RPC (contorna RLS)
-    await supabaseQuery(async () => await supabase.rpc("admin_excluir_lista", { p_lista_id: id }));
-    if (error) {
-       toast({ title: "Erro na exclusão", description: error.message, variant: "destructive" });
-       // Em caso de erro, seria ideal "desfazer" a UI otimista recarregando a lista
-       loadData();
-    } else {
-       toast({ title: "Lista excluída!" });
+    try {
+      await supabaseQuery(async () => await supabase.rpc("admin_excluir_lista", { p_lista_id: id }));
+      toast({ title: "Lista excluída!" });
+    } catch (err: any) {
+      toast({ title: "Erro na exclusão", description: err?.message, variant: "destructive" });
+      loadData();
     }
   }
 
