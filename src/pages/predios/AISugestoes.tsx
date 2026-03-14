@@ -1,10 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { usePredios, usePrediosPendentes } from '@/hooks/predios/usePredios';
+import { usePrediosPendentes } from '@/hooks/predios/usePredios';
 import { useEstatisticasLotes, useCreateLote } from '@/hooks/predios/useLotes';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { PredioPendenteRow } from '@/lib/predios/types';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,25 +10,148 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 import {
-    Sparkles, Building2, MapPin, RefreshCw, AlertTriangle,
-    ChevronDown, ChevronUp, Plus, Loader2, Info
+    Sparkles, Building2, MapPin, ChevronDown, ChevronUp,
+    Plus, Loader2, AlertTriangle, Clock, Star
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-interface Sugestao {
+// ─────────────────────────────────────────
+// Lógica local de pontuação de urgência
+// ─────────────────────────────────────────
+
+interface PredioComPontuacao extends PredioPendenteRow {
+    pontuacao: number;
+    motivos: string[];
+}
+
+function calcularPontuacao(p: PredioPendenteRow): { pontuacao: number; motivos: string[] } {
+    let pontuacao = 0;
+    const motivos: string[] = [];
+
+    // +40 — nunca visitado
+    if (p.vezes_na_lista === 0) {
+        pontuacao += 40;
+        motivos.push('Nunca visitado');
+    }
+
+    // +30 — tem pendência em aberto
+    if (p.tem_pendencia) {
+        pontuacao += 30;
+        motivos.push('Pendência em aberto');
+    }
+
+    // Tempo desde a última visita
+    if (p.ultima_vez_em) {
+        const diasDesdeUltimaVisita = Math.floor(
+            (Date.now() - new Date(p.ultima_vez_em).getTime()) / (1000 * 60 * 60 * 24)
+        );
+        if (diasDesdeUltimaVisita > 90) {
+            pontuacao += 20;
+            motivos.push(`Sem visita há ${diasDesdeUltimaVisita} dias`);
+        } else if (diasDesdeUltimaVisita > 30) {
+            pontuacao += 10;
+            motivos.push(`Sem visita há ${diasDesdeUltimaVisita} dias`);
+        }
+    } else if (p.vezes_na_lista > 0) {
+        // Esteve em lote mas sem data registrada
+        pontuacao += 10;
+        motivos.push('Data da última visita desconhecida');
+    }
+
+    return { pontuacao, motivos };
+}
+
+interface SugestaoLote {
     titulo: string;
-    motivo: string;
-    prioridade: 'alta' | 'media' | 'baixa';
     territorio: string | null;
-    predios_ids: number[];
-    predios_nomes: string[];
+    prioridade: 'alta' | 'media' | 'baixa';
+    predios: PredioComPontuacao[];
+    pontuacaoMedia: number;
 }
 
-interface AIResponse {
-    sugestoes: Sugestao[];
-    resumo: string;
-    error?: string;
+function gerarSugestoes(
+    pendentes: PredioPendenteRow[],
+    tamLote: number,
+    prediosEmLotesAtivos: Set<number>
+): SugestaoLote[] {
+    // Pontua e filtra prédios não estão em lotes ativos
+    const pontuados: PredioComPontuacao[] = pendentes
+        .filter(p => !prediosEmLotesAtivos.has(p.id))
+        .map(p => {
+            const { pontuacao, motivos } = calcularPontuacao(p);
+            return { ...p, pontuacao, motivos };
+        })
+        .sort((a, b) => b.pontuacao - a.pontuacao);
+
+    if (pontuados.length === 0) return [];
+
+    // Agrupa por território
+    const porTerritorio = new Map<string, PredioComPontuacao[]>();
+    const semTerritorio: PredioComPontuacao[] = [];
+
+    for (const p of pontuados) {
+        const t = p.territorio?.trim() || '';
+        if (t) {
+            if (!porTerritorio.has(t)) porTerritorio.set(t, []);
+            porTerritorio.get(t)!.push(p);
+        } else {
+            semTerritorio.push(p);
+        }
+    }
+
+    const sugestoes: SugestaoLote[] = [];
+
+    // Gera lotes por território
+    for (const [territorio, lista] of porTerritorio.entries()) {
+        // Divide em fatias de tamLote
+        for (let i = 0; i < lista.length; i += tamLote) {
+            const fatia = lista.slice(i, i + tamLote);
+            const media = fatia.reduce((s, p) => s + p.pontuacao, 0) / fatia.length;
+            const prioridade: 'alta' | 'media' | 'baixa' =
+                media >= 40 ? 'alta' : media >= 20 ? 'media' : 'baixa';
+
+            const num = Math.floor(i / tamLote) + 1;
+            sugestoes.push({
+                titulo: `Território ${territorio}${lista.length > tamLote ? ` — Parte ${num}` : ''}`,
+                territorio,
+                prioridade,
+                predios: fatia,
+                pontuacaoMedia: Math.round(media),
+            });
+        }
+    }
+
+    // Prédios sem território
+    for (let i = 0; i < semTerritorio.length; i += tamLote) {
+        const fatia = semTerritorio.slice(i, i + tamLote);
+        const media = fatia.reduce((s, p) => s + p.pontuacao, 0) / fatia.length;
+        const prioridade: 'alta' | 'media' | 'baixa' =
+            media >= 40 ? 'alta' : media >= 20 ? 'media' : 'baixa';
+        const num = Math.floor(i / tamLote) + 1;
+        sugestoes.push({
+            titulo: `Sem Território — Parte ${num}`,
+            territorio: null,
+            prioridade,
+            predios: fatia,
+            pontuacaoMedia: Math.round(media),
+        });
+    }
+
+    // Ordena sugestões: alta → media → baixa, depois por pontuação média
+    const ordemPrio = { alta: 0, media: 1, baixa: 2 };
+    sugestoes.sort((a, b) =>
+        ordemPrio[a.prioridade] - ordemPrio[b.prioridade] ||
+        b.pontuacaoMedia - a.pontuacaoMedia
+    );
+
+    return sugestoes;
 }
+
+// ─────────────────────────────────────────
+// Componentes
+// ─────────────────────────────────────────
 
 const PRIORIDADE_CONFIG = {
     alta: { label: 'Alta', class: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400' },
@@ -38,90 +159,41 @@ const PRIORIDADE_CONFIG = {
     baixa: { label: 'Baixa', class: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400' },
 };
 
-export default function AISugestoes() {
+export default function Sugestoes() {
     const navigate = useNavigate();
 
-    const { data: predios, isLoading: loadingPredios } = usePredios();
-    const { data: prediosPendentes, isLoading: loadingPendentes } = usePrediosPendentes();
+    const { data: pendentes, isLoading: loadingPendentes } = usePrediosPendentes();
     const { data: estatisticas, isLoading: loadingStats } = useEstatisticasLotes();
     const createLote = useCreateLote();
 
-    const [resultado, setResultado] = useState<AIResponse | null>(null);
-    const [analisando, setAnalisando] = useState(false);
+    const [tamLote, setTamLote] = useState(6);
     const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+    const [criarDialog, setCriarDialog] = useState<{ sugestao: SugestaoLote; nome: string } | null>(null);
 
-    // Dialog criar lote a partir de sugestão
-    const [criarDialog, setCriarDialog] = useState<{ sugestao: Sugestao; nome: string } | null>(null);
+    const isLoading = loadingPendentes || loadingStats;
 
-    const isLoading = loadingPredios || loadingPendentes || loadingStats;
+    // IDs dos prédios já em lotes ativos (para não repetir)
+    // Não temos a lista de predio_ids por lote via hook, então deixamos vazio por ora
+    const prediosEmLotesAtivos = useMemo(() => new Set<number>(), []);
 
-    async function analisar() {
-        if (!predios || !prediosPendentes || !estatisticas) {
-            toast.error('Dados ainda carregando, aguarde.');
-            return;
-        }
+    const sugestoes = useMemo(
+        () => pendentes ? gerarSugestoes(pendentes, tamLote, prediosEmLotesAtivos) : [],
+        [pendentes, tamLote, prediosEmLotesAtivos]
+    );
 
-        setAnalisando(true);
-        setResultado(null);
-
-        try {
-            // Prepara contexto enxuto para a IA
-            const prediosContexto = prediosPendentes.map(p => ({
-                id: p.id,
-                nome: p.nome,
-                endereco: p.endereco,
-                territorio: p.territorio,
-                total_aptos: p.total_aptos,
-                vezes_na_lista: p.vezes_na_lista,
-                ultima_vez_em: p.ultima_vez_em,
-                tem_pendencia: p.tem_pendencia,
-            }));
-
-            const lotesAtivos = estatisticas
-                .filter(e => !e.finalizado)
-                .map(e => ({
-                    nome: e.lote_nome,
-                    total_predios: e.total_predios,
-                    concluidos: e.concluidos,
-                    em_andamento: e.em_andamento,
-                    nao_iniciados: e.nao_iniciados,
-                    pendentes: e.pendentes,
-                    progresso_pct: e.progresso_geral_pct,
-                }));
-
-            const { data, error } = await supabase.functions.invoke('ai-sugestoes', {
-                body: {
-                    predios: prediosContexto,
-                    lotes_ativos: lotesAtivos,
-                },
-            });
-
-            if (error) throw new Error(error.message);
-            if (data?.error) throw new Error(data.error);
-
-            setResultado(data as AIResponse);
-        } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Erro desconhecido';
-            toast.error('Erro ao consultar IA', { description: msg });
-            // Mostra o erro na UI também
-            setResultado({ sugestoes: [], resumo: '', error: msg });
-        } finally {
-            setAnalisando(false);
-        }
-    }
+    const totalPendentes = pendentes?.length ?? 0;
+    const semVisita = pendentes?.filter(p => p.vezes_na_lista === 0).length ?? 0;
+    const comPendencia = pendentes?.filter(p => p.tem_pendencia).length ?? 0;
+    const lotesAtivos = estatisticas?.filter(e => !e.finalizado).length ?? 0;
 
     async function criarLoteDaSugestao() {
         if (!criarDialog) return;
-        try {
-            const lote = await createLote.mutateAsync({
-                loteData: { nome: criarDialog.nome, descricao: criarDialog.sugestao.motivo },
-                predioIds: criarDialog.sugestao.predios_ids,
-            });
-            setCriarDialog(null);
-            navigate(`/predios/lotes/${lote.id}`);
-        } catch {
-            // erro tratado pelo hook
-        }
+        const lote = await createLote.mutateAsync({
+            loteData: { nome: criarDialog.nome },
+            predioIds: criarDialog.sugestao.predios.map(p => p.id),
+        });
+        setCriarDialog(null);
+        navigate(`/predios/lotes/${lote.id}`);
     }
 
     return (
@@ -130,127 +202,94 @@ export default function AISugestoes() {
             <div>
                 <h1 className="text-2xl font-bold flex items-center gap-3">
                     <Sparkles className="w-6 h-6 text-primary" />
-                    Sugestões de IA
+                    Sugestões de Lotes
                 </h1>
                 <p className="text-muted-foreground mt-1 text-sm">
-                    A IA analisa prédios pendentes e incompletos e sugere lotes de trabalho priorizados por território e urgência.
+                    Prédios ranqueados por urgência e agrupados por território. Pontuação calculada por: nunca visitado, pendência em aberto e tempo sem visita.
                 </p>
             </div>
 
-            {/* Painel de contexto */}
+            {/* Cards de contexto */}
             {isLoading ? (
-                <div className="glass-card rounded-xl p-5">
-                    <Skeleton className="h-4 w-48 mb-2" />
-                    <div className="flex gap-4">
-                        <Skeleton className="h-14 w-28 rounded-lg" />
-                        <Skeleton className="h-14 w-28 rounded-lg" />
-                        <Skeleton className="h-14 w-28 rounded-lg" />
-                    </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}
                 </div>
             ) : (
-                <div className="glass-card rounded-xl p-5">
-                    <p className="text-sm font-medium mb-3 text-muted-foreground uppercase tracking-wide">Situação Atual</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div className="text-center p-3 rounded-lg bg-secondary">
-                            <p className="text-2xl font-bold">{predios?.length ?? 0}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">Total de Prédios</p>
-                        </div>
-                        <div className="text-center p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20">
-                            <p className="text-2xl font-bold text-amber-600">{prediosPendentes?.length ?? 0}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">Pendentes/Incompletos</p>
-                        </div>
-                        <div className="text-center p-3 rounded-lg bg-primary/5">
-                            <p className="text-2xl font-bold text-primary">
-                                {estatisticas?.filter(e => !e.finalizado).length ?? 0}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-0.5">Lotes Ativos</p>
-                        </div>
-                        <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-red-900/20">
-                            <p className="text-2xl font-bold text-red-600">
-                                {prediosPendentes?.filter(p => p.tem_pendencia).length ?? 0}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-0.5">Com Pendência</p>
-                        </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="glass-card rounded-xl p-4 text-center">
+                        <p className="text-2xl font-bold">{totalPendentes}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Prédios Pendentes</p>
+                    </div>
+                    <div className="glass-card rounded-xl p-4 text-center bg-amber-50 dark:bg-amber-900/10">
+                        <p className="text-2xl font-bold text-amber-600">{semVisita}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Nunca Visitados</p>
+                    </div>
+                    <div className="glass-card rounded-xl p-4 text-center bg-red-50 dark:bg-red-900/10">
+                        <p className="text-2xl font-bold text-red-600">{comPendencia}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Com Pendência</p>
+                    </div>
+                    <div className="glass-card rounded-xl p-4 text-center bg-primary/5">
+                        <p className="text-2xl font-bold text-primary">{lotesAtivos}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Lotes Ativos</p>
                     </div>
                 </div>
             )}
 
-            {/* Botão analisar */}
-            <div className="flex gap-3 items-center">
-                <Button
-                    onClick={analisar}
-                    disabled={analisando || isLoading}
-                    className="gap-2"
-                    size="lg"
-                >
-                    {analisando ? (
-                        <><Loader2 className="w-4 h-4 animate-spin" />Analisando com IA...</>
-                    ) : (
-                        <><Sparkles className="w-4 h-4" />Gerar Sugestões</>
-                    )}
-                </Button>
-                {resultado && !analisando && (
-                    <Button variant="ghost" size="sm" onClick={analisar} className="gap-1.5 text-muted-foreground">
-                        <RefreshCw className="w-3.5 h-3.5" />
-                        Reanalisar
-                    </Button>
-                )}
-                <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                    <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                    <span>Requer a Edge Function <code className="bg-muted px-1 py-0.5 rounded">ai-sugestoes</code> implantada no Supabase</span>
+            {/* Controle de tamanho do lote */}
+            <div className="glass-card rounded-xl p-5">
+                <div className="flex items-center justify-between mb-3">
+                    <Label className="text-sm font-medium">Tamanho do lote sugerido</Label>
+                    <span className="text-sm font-bold text-primary">{tamLote} prédios</span>
+                </div>
+                <Slider
+                    value={[tamLote]}
+                    min={3}
+                    max={15}
+                    step={1}
+                    onValueChange={([v]) => setTamLote(v)}
+                    className="w-full"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <span>3</span>
+                    <span>15</span>
                 </div>
             </div>
 
-            {/* Resultado de erro */}
-            {resultado?.error && (
-                <div className="glass-card rounded-xl p-5 border border-destructive/30 bg-destructive/5">
-                    <div className="flex items-start gap-3">
-                        <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
-                        <div>
-                            <p className="font-semibold text-destructive">Erro ao consultar IA</p>
-                            <p className="text-sm text-muted-foreground mt-1">{resultado.error}</p>
-                            {resultado.error.includes('ANTHROPIC_API_KEY') && (
-                                <div className="mt-3 text-xs bg-muted rounded-lg p-3 space-y-1 font-mono">
-                                    <p># Configure a chave API no Supabase:</p>
-                                    <p>supabase secrets set ANTHROPIC_API_KEY=sk-ant-...</p>
-                                    <p># Implante a função:</p>
-                                    <p>supabase functions deploy ai-sugestoes</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Resumo da IA */}
-            {resultado?.resumo && !resultado.error && (
-                <div className="glass-card rounded-xl p-5 border border-primary/20 bg-primary/5">
-                    <div className="flex items-start gap-3">
-                        <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                        <div>
-                            <p className="font-semibold text-sm mb-1">Análise da IA</p>
-                            <p className="text-sm text-muted-foreground">{resultado.resumo}</p>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* Lista de sugestões */}
-            {resultado?.sugestoes && resultado.sugestoes.length > 0 && (
+            {isLoading ? (
                 <div className="space-y-3">
-                    <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                        {resultado.sugestoes.length} sugestão(ões) de lote
-                    </h2>
-                    {resultado.sugestoes.map((s, idx) => {
+                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
+                </div>
+            ) : sugestoes.length === 0 ? (
+                <div className="glass-card rounded-xl p-10 text-center text-muted-foreground">
+                    <Sparkles className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                    <p className="font-medium">Nenhum prédio pendente encontrado</p>
+                    <p className="text-sm mt-1">Todos os prédios parecem estar cobertos pelos lotes ativos.</p>
+                </div>
+            ) : (
+                <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {sugestoes.length} sugestão(ões) — do mais urgente ao menos urgente
+                    </p>
+
+                    {sugestoes.map((s, idx) => {
                         const isExpanded = expandedIdx === idx;
-                        const config = PRIORIDADE_CONFIG[s.prioridade] ?? PRIORIDADE_CONFIG.baixa;
+                        const config = PRIORIDADE_CONFIG[s.prioridade];
                         return (
                             <div key={idx} className="glass-card rounded-xl overflow-hidden border">
-                                {/* Cabeçalho da sugestão */}
+                                {/* Cabeçalho */}
                                 <button
                                     className="w-full p-4 flex items-start gap-4 text-left hover:bg-muted/30 transition-colors"
                                     onClick={() => setExpandedIdx(isExpanded ? null : idx)}
                                 >
+                                    {/* Número de ranking */}
+                                    <div className={cn(
+                                        'shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold',
+                                        idx === 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                                    )}>
+                                        {idx + 1}
+                                    </div>
+
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 flex-wrap mb-1">
                                             <span className="font-semibold">{s.titulo}</span>
@@ -265,30 +304,55 @@ export default function AISugestoes() {
                                             )}
                                             <Badge variant="secondary" className="text-xs gap-1">
                                                 <Building2 className="w-3 h-3" />
-                                                {s.predios_ids.length} prédios
+                                                {s.predios.length} prédios
+                                            </Badge>
+                                            <Badge variant="secondary" className="text-xs gap-1">
+                                                <Star className="w-3 h-3" />
+                                                Score {s.pontuacaoMedia}
                                             </Badge>
                                         </div>
-                                        <p className="text-sm text-muted-foreground">{s.motivo}</p>
+
+                                        {/* Resumo dos motivos */}
+                                        <div className="flex flex-wrap gap-1.5 mt-1">
+                                            {Array.from(new Set(s.predios.flatMap(p => p.motivos))).slice(0, 3).map((m, i) => (
+                                                <span key={i} className="text-xs text-muted-foreground flex items-center gap-1">
+                                                    {m.includes('visita') ? <Clock className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
+                                                    {m}
+                                                </span>
+                                            ))}
+                                        </div>
                                     </div>
+
                                     <div className="shrink-0 mt-1">
                                         {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                                     </div>
                                 </button>
 
-                                {/* Detalhe expandido */}
+                                {/* Detalhes expandidos */}
                                 {isExpanded && (
                                     <div className="border-t px-4 pb-4 pt-3 bg-muted/20">
-                                        <p className="text-xs font-medium text-muted-foreground mb-2">Prédios incluídos:</p>
-                                        <div className="flex flex-wrap gap-1.5 mb-4">
-                                            {s.predios_nomes.map((nome, i) => (
-                                                <span
-                                                    key={i}
-                                                    className="text-xs bg-background border rounded-full px-2.5 py-1"
-                                                >
-                                                    {nome}
-                                                </span>
+                                        <div className="space-y-2 mb-4">
+                                            {s.predios.map((p, pi) => (
+                                                <div key={p.id} className="flex items-start gap-3 text-sm">
+                                                    <span className="text-xs text-muted-foreground w-5 pt-0.5 shrink-0">{pi + 1}.</span>
+                                                    <div className="flex-1 min-w-0">
+                                                        <span className="font-medium">{p.nome}</span>
+                                                        {p.endereco && (
+                                                            <span className="text-muted-foreground text-xs ml-2">{p.endereco}</span>
+                                                        )}
+                                                        <div className="flex flex-wrap gap-1.5 mt-0.5">
+                                                            {p.motivos.map((m, mi) => (
+                                                                <span key={mi} className="text-xs bg-background border rounded-full px-2 py-0.5 text-muted-foreground">
+                                                                    {m}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-xs font-semibold text-primary shrink-0">{p.pontuacao}pts</span>
+                                                </div>
                                             ))}
                                         </div>
+
                                         <Button
                                             size="sm"
                                             className="gap-2"
@@ -305,21 +369,13 @@ export default function AISugestoes() {
                 </div>
             )}
 
-            {resultado?.sugestoes && resultado.sugestoes.length === 0 && !resultado.error && (
-                <div className="glass-card rounded-xl p-10 text-center text-muted-foreground">
-                    <Sparkles className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                    <p className="font-medium">Nenhuma sugestão gerada</p>
-                    <p className="text-sm mt-1">Todos os prédios podem já estar cobertos pelos lotes ativos.</p>
-                </div>
-            )}
-
-            {/* Dialog: Criar lote a partir de sugestão */}
+            {/* Dialog: Criar lote */}
             <Dialog open={!!criarDialog} onOpenChange={(o) => { if (!o) setCriarDialog(null); }}>
                 <DialogContent className="max-w-sm">
                     <DialogHeader>
                         <DialogTitle>Criar Lote</DialogTitle>
                         <p className="text-sm text-muted-foreground">
-                            {criarDialog?.sugestao.predios_ids.length} prédios serão associados ao novo lote.
+                            {criarDialog?.sugestao.predios.length} prédios serão associados ao novo lote.
                         </p>
                     </DialogHeader>
                     <div className="space-y-3 py-2">
@@ -328,13 +384,20 @@ export default function AISugestoes() {
                             <Input
                                 value={criarDialog?.nome ?? ''}
                                 onChange={(e) => criarDialog && setCriarDialog({ ...criarDialog, nome: e.target.value })}
-                                placeholder="Ex: Zona Norte — Urgente"
+                                placeholder="Ex: Território 3 — Urgente"
                                 autoFocus
                                 onKeyDown={(e) => { if (e.key === 'Enter') criarLoteDaSugestao(); }}
                             />
                         </div>
-                        <div className="text-xs text-muted-foreground bg-muted rounded-lg p-2.5">
-                            <strong>Motivo:</strong> {criarDialog?.sugestao.motivo}
+                        <div className="text-xs text-muted-foreground bg-muted rounded-lg p-2.5 space-y-0.5">
+                            {criarDialog?.sugestao.predios.slice(0, 5).map(p => (
+                                <p key={p.id}>· {p.nome}</p>
+                            ))}
+                            {(criarDialog?.sugestao.predios.length ?? 0) > 5 && (
+                                <p className="text-muted-foreground">
+                                    e mais {(criarDialog?.sugestao.predios.length ?? 0) - 5} prédio(s)...
+                                </p>
+                            )}
                         </div>
                     </div>
                     <DialogFooter>
@@ -345,7 +408,10 @@ export default function AISugestoes() {
                             onClick={criarLoteDaSugestao}
                             disabled={createLote.isPending || !criarDialog?.nome.trim()}
                         >
-                            {createLote.isPending ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Criando...</> : 'Criar Lote'}
+                            {createLote.isPending
+                                ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Criando...</>
+                                : 'Criar Lote'
+                            }
                         </Button>
                     </DialogFooter>
                 </DialogContent>
