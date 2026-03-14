@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useEstatisticasLotes, useCreateLote } from '@/hooks/predios/useLotes';
+import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { useEstatisticasLotes } from '@/hooks/predios/useLotes';
 import { usePrediosPendentes } from '@/hooks/predios/usePredios';
+import { supabase } from '@/integrations/supabase/client';
 import { PredioPendenteRow } from '@/lib/predios/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,10 +29,9 @@ function pontuarPredio(p: PredioPendenteRow): number {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function LotesList() {
-    const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { data: lotes, isLoading } = useEstatisticasLotes();
     const { data: pendentes } = usePrediosPendentes();
-    const createLote = useCreateLote();
 
     const [search, setSearch] = useState('');
     const [gerando, setGerando] = useState(false);
@@ -56,11 +57,6 @@ export default function LotesList() {
                 .sort((a, b) => b.pts - a.pts)
                 .slice(0, 70);
 
-            if (pontuados.length === 0) {
-                toast.info('Não há prédios pendentes para gerar listas.');
-                return;
-            }
-
             const totalListas = Math.min(10, Math.ceil(pontuados.length / 7));
             let criadas = 0;
 
@@ -68,29 +64,49 @@ export default function LotesList() {
                 const grupo = pontuados.slice(i * 7, (i + 1) * 7);
                 if (grupo.length === 0) break;
 
-                // Nome: usa o território mais frequente do grupo
-                const territorios = grupo.map(p => p.territorio).filter(Boolean);
-                const territorioMaisFreq = territorios.length > 0
-                    ? territorios.sort((a, b) =>
-                        territorios.filter(t => t === b).length - territorios.filter(t => t === a).length
-                    )[0]
-                    : null;
+                // Território mais frequente do grupo
+                const contagem: Record<string, number> = {};
+                for (const p of grupo) {
+                    if (p.territorio) contagem[p.territorio] = (contagem[p.territorio] ?? 0) + 1;
+                }
+                const territorioMaisFreq = Object.keys(contagem).sort((a, b) => contagem[b] - contagem[a])[0] ?? null;
+                const nome = territorioMaisFreq ? `Lista ${i + 1} — T${territorioMaisFreq}` : `Lista ${i + 1}`;
 
-                const nome = territorioMaisFreq
-                    ? `Lista ${i + 1} — T${territorioMaisFreq}`
-                    : `Lista ${i + 1}`;
+                // Cria o lote direto no Supabase (sem usar o hook para não disparar toasts individuais)
+                const { data: lote, error: loteError } = await supabase
+                    .from('lotes')
+                    .insert({ nome })
+                    .select()
+                    .single();
 
-                await createLote.mutateAsync({
-                    loteData: { nome },
-                    predioIds: grupo.map(p => p.id),
-                });
+                if (loteError) throw loteError;
+
+                const lotePredios = grupo.map(p => ({
+                    lote_id: lote.id,
+                    predio_id: Number(p.id),
+                    meta_cartas: 1,
+                    status: 'nao_iniciado' as const,
+                }));
+
+                const { error: lpError } = await supabase
+                    .from('lote_predios')
+                    .insert(lotePredios);
+
+                if (lpError) throw lpError;
 
                 criadas++;
             }
 
+            // Invalida queries para atualizar a tela
+            queryClient.invalidateQueries({ queryKey: ['lotes'] });
+            queryClient.invalidateQueries({ queryKey: ['estatisticas_lotes'] });
+            queryClient.invalidateQueries({ queryKey: ['predios_pendentes'] });
+
             toast.success(`${criadas} lista(s) gerada(s) com sucesso!`);
-        } catch {
-            toast.error('Erro ao gerar listas automáticas.');
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Erro desconhecido';
+            toast.error('Erro ao gerar listas', { description: msg });
+            console.error('Erro ao gerar listas:', err);
         } finally {
             setGerando(false);
         }
