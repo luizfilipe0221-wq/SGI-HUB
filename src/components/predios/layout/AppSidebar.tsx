@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Building2, LayoutDashboard, MapPin, ListChecks, FileStack, LogOut, Menu, Users, FileText, Shield, Upload, Settings, Sparkles } from 'lucide-react';
+import { Building2, LayoutDashboard, ListChecks, LogOut, Menu, Users, FileText, Shield, Upload, Settings, Sparkles } from 'lucide-react';
 import { useAuth } from '@/hooks/predios/useAuth';
 import { usePermissions } from '@/hooks/predios/usePermissions';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ const navItems = [{
   permission: PERMISSIONS.VIEW_PREDIOS
 }, {
   icon: ListChecks,
-  label: 'Lotes de Trabalho',
+  label: 'Gerar Listas',
   path: '/predios/lotes',
   permission: PERMISSIONS.GENERATE_LISTS
 }, {

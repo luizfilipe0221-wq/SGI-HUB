@@ -238,9 +238,9 @@ export default function LoteDetail() {
     if (!stats) {
         return (
             <div className="text-center py-12">
-                <h2 className="text-xl font-semibold mb-2">Lote não encontrado</h2>
+                <h2 className="text-xl font-semibold mb-2">Lista não encontrada</h2>
                 <Button onClick={() => navigate('/predios/lotes')} variant="outline">
-                    Voltar para Lotes
+                    Voltar para Listas
                 </Button>
             </div>
         );
@@ -281,14 +281,14 @@ export default function LoteDetail() {
                             className="gap-2"
                         >
                             <Flag className="w-4 h-4" />
-                            Finalizar Lote
+                            Finalizar Lista
                         </Button>
                         <Button
                             variant="ghost"
                             size="icon"
                             className="text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={() => setConfirmDelete(true)}
-                            title="Excluir lote"
+                            title="Excluir lista"
                         >
                             <Trash2 className="w-4 h-4" />
                         </Button>
@@ -493,9 +493,9 @@ export default function LoteDetail() {
             <AlertDialog open={confirmFinalizar} onOpenChange={setConfirmFinalizar}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Finalizar lote "{stats.lote_nome}"?</AlertDialogTitle>
+                        <AlertDialogTitle>Finalizar lista "{stats.lote_nome}"?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            O lote será marcado como finalizado. Ainda poderá ser consultado, mas não serão registradas novas entregas.
+                            A lista será marcada como finalizada. Ainda poderá ser consultada, mas não serão registradas novas entregas.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -511,9 +511,9 @@ export default function LoteDetail() {
             <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Excluir lote "{stats.lote_nome}"?</AlertDialogTitle>
+                        <AlertDialogTitle>Excluir lista "{stats.lote_nome}"?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Esta ação não pode ser desfeita. O lote e todos os registros de entrega serão excluídos permanentemente.
+                            Esta ação não pode ser desfeita. A lista e todos os registros de entrega serão excluídos permanentemente.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

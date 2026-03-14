@@ -71,14 +71,14 @@ export default function LoteNovo() {
                     <ArrowLeft className="w-5 h-5" />
                 </Button>
                 <div>
-                    <h1 className="text-2xl font-bold">Novo Lote</h1>
-                    <p className="text-muted-foreground text-sm">Crie um grupo de prédios para uma rota de entrega</p>
+                    <h1 className="text-2xl font-bold">Nova Lista</h1>
+                    <p className="text-muted-foreground text-sm">Crie uma lista de prédios para uma rota de entrega</p>
                 </div>
             </div>
 
             {/* Dados do lote */}
             <div className="glass-card rounded-xl p-5 space-y-4">
-                <h2 className="font-semibold">Dados do Lote</h2>
+                <h2 className="font-semibold">Dados da Lista</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <Label>Nome *</Label>
@@ -185,7 +185,7 @@ export default function LoteNovo() {
                     className="gap-2"
                 >
                     <Plus className="w-4 h-4" />
-                    {createLote.isPending ? 'Criando...' : 'Criar Lote'}
+                    {createLote.isPending ? 'Criando...' : 'Criar Lista'}
                 </Button>
             </div>
         </div>

@@ -1,35 +1,128 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useEstatisticasLotes } from '@/hooks/predios/useLotes';
+import { Link, useNavigate } from 'react-router-dom';
+import { useEstatisticasLotes, useCreateLote } from '@/hooks/predios/useLotes';
+import { usePrediosPendentes } from '@/hooks/predios/usePredios';
+import { PredioPendenteRow } from '@/lib/predios/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Search, ListChecks } from 'lucide-react';
-import { ptBR } from 'date-fns/locale';
-import { format } from 'date-fns';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Plus, Search, ListChecks, Sparkles, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
+// ─── Lógica de pontuação (mesma do AISugestoes) ───────────────────────────────
+function pontuarPredio(p: PredioPendenteRow): number {
+    let pts = 0;
+    if (p.vezes_na_lista === 0) pts += 40;
+    if (p.tem_pendencia) pts += 30;
+    if (p.ultima_vez_em) {
+        const dias = Math.floor((Date.now() - new Date(p.ultima_vez_em).getTime()) / 86400000);
+        if (dias > 90) pts += 20;
+        else if (dias > 30) pts += 10;
+    } else if (p.vezes_na_lista > 0) {
+        pts += 10;
+    }
+    return pts;
+}
+
+// ─── Componente principal ─────────────────────────────────────────────────────
 export default function LotesList() {
+    const navigate = useNavigate();
     const { data: lotes, isLoading } = useEstatisticasLotes();
+    const { data: pendentes } = usePrediosPendentes();
+    const createLote = useCreateLote();
+
     const [search, setSearch] = useState('');
+    const [gerando, setGerando] = useState(false);
+    const [confirmarGerar, setConfirmarGerar] = useState(false);
 
     const filteredLotes = lotes?.filter(lote =>
         lote.lote_nome.toLowerCase().includes(search.toLowerCase())
     ) || [];
 
+    async function gerarListasAutomaticamente() {
+        if (!pendentes || pendentes.length === 0) {
+            toast.error('Nenhum prédio pendente encontrado para gerar listas.');
+            return;
+        }
+
+        setConfirmarGerar(false);
+        setGerando(true);
+
+        try {
+            // Pontua, ordena e pega os top 70 (10 listas × 7 prédios)
+            const pontuados = [...pendentes]
+                .map(p => ({ ...p, pts: pontuarPredio(p) }))
+                .sort((a, b) => b.pts - a.pts)
+                .slice(0, 70);
+
+            if (pontuados.length === 0) {
+                toast.info('Não há prédios pendentes para gerar listas.');
+                return;
+            }
+
+            const totalListas = Math.min(10, Math.ceil(pontuados.length / 7));
+            let criadas = 0;
+
+            for (let i = 0; i < totalListas; i++) {
+                const grupo = pontuados.slice(i * 7, (i + 1) * 7);
+                if (grupo.length === 0) break;
+
+                // Nome: usa o território mais frequente do grupo
+                const territorios = grupo.map(p => p.territorio).filter(Boolean);
+                const territorioMaisFreq = territorios.length > 0
+                    ? territorios.sort((a, b) =>
+                        territorios.filter(t => t === b).length - territorios.filter(t => t === a).length
+                    )[0]
+                    : null;
+
+                const nome = territorioMaisFreq
+                    ? `Lista ${i + 1} — T${territorioMaisFreq}`
+                    : `Lista ${i + 1}`;
+
+                await createLote.mutateAsync({
+                    loteData: { nome },
+                    predioIds: grupo.map(p => p.id),
+                });
+
+                criadas++;
+            }
+
+            toast.success(`${criadas} lista(s) gerada(s) com sucesso!`);
+        } catch {
+            toast.error('Erro ao gerar listas automáticas.');
+        } finally {
+            setGerando(false);
+        }
+    }
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-foreground">Lotes de Trabalho</h1>
-                    <p className="text-muted-foreground">Gerencie as rotinas de entrega agrupadas</p>
+                    <h1 className="text-2xl font-bold text-foreground">Listas de Trabalho</h1>
+                    <p className="text-muted-foreground">Gerencie as listas de prédios agrupadas por rota</p>
                 </div>
 
-                <Button asChild>
-                    <Link to="/predios/lotes/novo">
-                        <Plus className="w-4 h-4 mr-2" />
-                        Novo Lote
-                    </Link>
-                </Button>
+                <div className="flex gap-2 flex-wrap">
+                    <Button
+                        variant="outline"
+                        className="gap-2"
+                        onClick={() => setConfirmarGerar(true)}
+                        disabled={gerando || isLoading}
+                    >
+                        {gerando
+                            ? <><Loader2 className="w-4 h-4 animate-spin" />Gerando...</>
+                            : <><Sparkles className="w-4 h-4" />Gerar 10 Listas Automáticas</>
+                        }
+                    </Button>
+                    <Button asChild>
+                        <Link to="/predios/lotes/novo">
+                            <Plus className="w-4 h-4 mr-2" />
+                            Nova Lista
+                        </Link>
+                    </Button>
+                </div>
             </div>
 
             <div className="glass-card rounded-xl p-4">
@@ -37,7 +130,7 @@ export default function LotesList() {
                     <div className="relative flex-1 max-w-md">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
-                            placeholder="Buscar lote por nome..."
+                            placeholder="Buscar lista por nome..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="pl-9"
@@ -52,9 +145,11 @@ export default function LotesList() {
                 ) : filteredLotes.length === 0 ? (
                     <div className="text-center py-12">
                         <ListChecks className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-foreground">Nenhum lote encontrado</h3>
+                        <h3 className="text-lg font-medium text-foreground">Nenhuma lista encontrada</h3>
                         <p className="text-muted-foreground mt-1">
-                            {search ? 'Tente buscar com outros termos.' : 'Crie seu primeiro lote para começar.'}
+                            {search
+                                ? 'Tente buscar com outros termos.'
+                                : 'Crie sua primeira lista ou use o botão "Gerar 10 Listas Automáticas".'}
                         </p>
                     </div>
                 ) : (
@@ -67,11 +162,11 @@ export default function LotesList() {
                             >
                                 <div className="flex items-start justify-between mb-4">
                                     <h3 className="font-semibold text-lg line-clamp-1">{lote.lote_nome}</h3>
-                                    <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${lote.finalizado
+                                    <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium shrink-0 ml-2 ${lote.finalizado
                                         ? 'bg-secondary text-secondary-foreground'
                                         : 'bg-primary/10 text-primary'
                                         }`}>
-                                        {lote.finalizado ? 'Finalizado' : 'Ativo'}
+                                        {lote.finalizado ? 'Finalizada' : 'Ativa'}
                                     </span>
                                 </div>
 
@@ -93,8 +188,8 @@ export default function LotesList() {
                                             <span className="font-medium">{lote.total_predios}</span>
                                         </div>
                                         <div>
-                                            <span className="text-muted-foreground block text-xs">Meta de Cartas</span>
-                                            <span className="font-medium">{lote.total_meta_cartas}</span>
+                                            <span className="text-muted-foreground block text-xs">Concluídos</span>
+                                            <span className="font-medium">{lote.concluidos}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -104,9 +199,10 @@ export default function LotesList() {
                                         <span className="text-amber-500 font-medium">Em andamento: {lote.em_andamento}</span>
                                     )}
                                     {lote.finalizado && (
-                                        <span className="text-primary font-medium tracking-wide">
-                                            Pronto
-                                        </span>
+                                        <span className="text-primary font-medium tracking-wide">Concluída</span>
+                                    )}
+                                    {!lote.finalizado && lote.em_andamento === 0 && (
+                                        <span className="text-muted-foreground">Não iniciada</span>
                                     )}
                                 </div>
                             </Link>
@@ -114,6 +210,24 @@ export default function LotesList() {
                     </div>
                 )}
             </div>
+
+            {/* Confirmação: Gerar automático */}
+            <AlertDialog open={confirmarGerar} onOpenChange={setConfirmarGerar}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Gerar 10 Listas Automaticamente?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            O sistema vai selecionar os <strong>70 prédios mais urgentes</strong> (nunca visitados, com pendências e há mais tempo sem visita), dividir em <strong>10 listas de 7 prédios</strong> cada, agrupando por território e criar todas automaticamente.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={gerarListasAutomaticamente}>
+                            Gerar Listas
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
