@@ -80,9 +80,9 @@ export function useExtractions() {
       const storagePath = `${user.id}/${Date.now()}_${file.name}`;
 
       // Upload to storage
-      await supabaseQuery(async () => { const res = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('uploads')
-        .upload(storagePath, file); return { data: null, error: res.error }; });
+        .upload(storagePath, file);
 
       if (uploadError) throw uploadError;
 
@@ -123,9 +123,9 @@ export function useExtractions() {
 
   const processMutation = useMutation({
     mutationFn: async (extractionId: string) => {
-      const data = await supabaseQuery(async () => await supabase.functions.invoke('process-extraction', {
+      const { data, error } = await supabase.functions.invoke('process-extraction', {
         body: { extractionId },
-      }));
+      });
 
       if (error) throw error;
       return data;

@@ -22,6 +22,7 @@ import AuditLogs from '@/pages/predios/AuditLogs';
 import Uploads from '@/pages/predios/Uploads';
 import ReviewExtraction from '@/pages/predios/ReviewExtraction';
 import CustomFieldsManagement from '@/pages/predios/CustomFieldsManagement';
+import AISugestoes from '@/pages/predios/AISugestoes';
 
 // Error Boundary to show errors instead of blank screen
 class PrediosErrorBoundary extends React.Component<
@@ -77,6 +78,7 @@ export function PrediosSection() {
                             <Route path="uploads" element={<Uploads />} />
                             <Route path="review/:id" element={<ReviewExtraction />} />
                             <Route path="custom-fields" element={<CustomFieldsManagement />} />
+                            <Route path="ai-sugestoes" element={<AISugestoes />} />
                         </Route>
                     </Routes>
                 </SgiLayout>

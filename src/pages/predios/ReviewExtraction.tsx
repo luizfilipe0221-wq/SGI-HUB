@@ -106,7 +106,7 @@ function ReviewExtractionContent() {
       return;
     }
     await importBuildings(approvedIds);
-    navigate('/buildings');
+    navigate('/predios/buildings');
   };
 
   const handleEdit = (building: import('@/hooks/predios/useExtractions').ExtractedBuilding) => {

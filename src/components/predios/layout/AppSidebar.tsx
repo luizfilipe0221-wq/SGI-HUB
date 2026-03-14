@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Building2, LayoutDashboard, MapPin, ListChecks, FileStack, LogOut, Menu, Users, FileText, Shield, Upload, Settings } from 'lucide-react';
+import { Building2, LayoutDashboard, MapPin, ListChecks, FileStack, LogOut, Menu, Users, FileText, Shield, Upload, Settings, Sparkles } from 'lucide-react';
 import { useAuth } from '@/hooks/predios/useAuth';
 import { usePermissions } from '@/hooks/predios/usePermissions';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,11 @@ const navItems = [{
   label: 'Upload/Extração',
   path: '/predios/uploads',
   permission: PERMISSIONS.UPLOAD_FILES
+}, {
+  icon: Sparkles,
+  label: 'Sugestões IA',
+  path: '/predios/ai-sugestoes',
+  permission: PERMISSIONS.GENERATE_LISTS
 }];
 const adminItems = [{
   icon: Users,
